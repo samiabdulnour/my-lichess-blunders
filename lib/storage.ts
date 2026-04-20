@@ -1,0 +1,97 @@
+import type { Puzzle } from './types';
+
+/**
+ * Tiny localStorage wrapper for persisting imported puzzles across reloads.
+ *
+ * Keys:
+ *   bt.puzzles          — Puzzle[] generated from imports
+ *   bt.username         — the Lichess username used for imports (convenience)
+ *   bt.solved           — { [puzzleId]: 'ok' | 'fail' } progress
+ *   bt.oldestFetchedMs  — UNIX ms of the oldest game imported from Lichess,
+ *                         used as a cursor for the "fetch older 30 games" button.
+ *
+ * Graduate this to a real database (SQLite via better-sqlite3, or Postgres)
+ * when you start caring about multi-device or multi-user.
+ */
+
+const KEY_PUZZLES = 'bt.puzzles';
+const KEY_USERNAME = 'bt.username';
+const KEY_SOLVED = 'bt.solved';
+const KEY_OLDEST = 'bt.oldestFetchedMs';
+
+export function loadPuzzles(): Puzzle[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(KEY_PUZZLES);
+    if (!raw) return [];
+    return JSON.parse(raw) as Puzzle[];
+  } catch {
+    return [];
+  }
+}
+
+export function savePuzzles(puzzles: Puzzle[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(KEY_PUZZLES, JSON.stringify(puzzles));
+  } catch (err) {
+    console.warn('Failed to save puzzles to localStorage:', err);
+  }
+}
+
+export function loadUsername(): string {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(KEY_USERNAME) ?? '';
+}
+
+export function saveUsername(username: string): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(KEY_USERNAME, username);
+}
+
+export function loadSolved(): Record<string, 'ok' | 'fail'> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(KEY_SOLVED);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export function saveSolved(solved: Record<string, 'ok' | 'fail'>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(KEY_SOLVED, JSON.stringify(solved));
+  } catch (err) {
+    console.warn('Failed to save solved map to localStorage:', err);
+  }
+}
+
+/** Merge two puzzle lists, deduping by id. Later entries win. */
+export function mergePuzzles(a: Puzzle[], b: Puzzle[]): Puzzle[] {
+  const map = new Map<string, Puzzle>();
+  for (const p of a) map.set(p.id, p);
+  for (const p of b) map.set(p.id, p);
+  return Array.from(map.values());
+}
+
+/**
+ * Cursor for "fetch older games" pagination. Stores the UNIX ms timestamp
+ * of the oldest Lichess game already imported; the next batch fetches
+ * games strictly older than this.
+ */
+export function loadOldestFetchedMs(): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = window.localStorage.getItem(KEY_OLDEST);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function saveOldestFetchedMs(ms: number | null): void {
+  if (typeof window === 'undefined') return;
+  if (ms == null) window.localStorage.removeItem(KEY_OLDEST);
+  else window.localStorage.setItem(KEY_OLDEST, String(ms));
+}
