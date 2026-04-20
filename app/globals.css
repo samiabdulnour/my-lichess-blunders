@@ -79,6 +79,29 @@ body {
 }
 .titlebar-author:hover { color: var(--blue); }
 
+/* Hamburger / X button for toggling the sidebar */
+.sidebar-toggle {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: 1px solid transparent;
+  color: var(--txt-dim);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+.sidebar-toggle:hover {
+  color: var(--txt);
+  border-color: var(--border);
+  background: var(--bg2);
+}
+
 .app {
   display: flex;
   flex: 1;
@@ -86,17 +109,24 @@ body {
   min-height: 0;
 }
 
-/* ── Sidebar ── */
+/* ── Sidebar ──
+   Hidden by default — the TerminalShell adds `.sidebar-open` to `.app`
+   when the user toggles the hamburger icon. On desktop it takes a fixed
+   320px flex column; on mobile it becomes a slide-in overlay. */
 .side {
   width: 320px;
   flex-shrink: 0;
   background: var(--bg);
   border-right: 1px solid var(--border);
-  display: flex;
+  display: none;
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
 }
+.app.sidebar-open .side { display: flex; }
+
+/* Scrim (click-away layer) only matters on mobile — see media query below. */
+.sidebar-scrim { display: none; }
 .side-header {
   padding: 10px 14px 8px;
   border-bottom: 1px solid var(--border);
@@ -328,20 +358,29 @@ body {
 .puzzle-prompt::before { content: '> '; color: var(--green); font-weight: bold; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-/* ── Board ── */
-.bwrap { display: flex; gap: 8px; align-items: flex-start; }
+/* ── Board ──
+   Board sizing is driven by a single CSS variable, --sq-size, so squares,
+   pieces, rank/file labels, and the grid template all scale together.
+   Default is 60px (comfortable on desktop); media queries below shrink
+   it proportionally for narrow viewports. */
+.bwrap {
+  --sq-size: 60px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
 .ranks {
   display: flex; flex-direction: column; justify-content: space-around;
   font-size: 10px; color: var(--txt-dim); padding-right: 2px;
   font-weight: bold;
 }
-.ranks span { height: 60px; display: flex; align-items: center; }
+.ranks span { height: var(--sq-size); display: flex; align-items: center; }
 .bcol { display: flex; flex-direction: column; }
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(8, 60px);
-  grid-template-rows: repeat(8, 60px);
+  grid-template-columns: repeat(8, var(--sq-size));
+  grid-template-rows: repeat(8, var(--sq-size));
   border: 1px solid var(--border2);
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   user-select: none;
@@ -353,9 +392,17 @@ body {
   display: flex; justify-content: space-around;
   padding-top: 5px; font-size: 10px; color: var(--txt-dim); font-weight: bold;
 }
-.files span { width: 60px; text-align: center; }
+.files span { width: var(--sq-size); text-align: center; }
 
-.sq { width:60px; height:60px; display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+.sq {
+  width: var(--sq-size);
+  height: var(--sq-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
 .sq-l { background: var(--sq-l); }
 .sq-d { background: var(--sq-d); }
 
@@ -379,8 +426,8 @@ body {
 .sq.flash-fail { background: rgba(192,57,43,0.55)  !important; }
 
 .piece {
-  width: 54px;
-  height: 54px;
+  width: calc(var(--sq-size, 60px) * 0.9);
+  height: calc(var(--sq-size, 60px) * 0.9);
   pointer-events: none;
   position: relative;
   z-index: 2;
@@ -491,3 +538,77 @@ body {
   width: 100%; max-width: 778px;
 }
 .empty-line { display: flex; gap: 8px; }
+
+/* ──────────────────────────────────────────────────────────────────
+   Responsive layout
+   ────────────────────────────────────────────────────────────────── */
+
+/* Tablet-ish: shrink the board a touch when the result panel still has
+   to fit beside it, but the viewport is narrower than a desktop. */
+@media (max-width: 1024px) {
+  .bwrap { --sq-size: 52px; }
+}
+
+/* Narrow / mobile: sidebar becomes a slide-in overlay; board scales to
+   fit the viewport; result panel stacks below instead of beside. */
+@media (max-width: 768px) {
+  .app.sidebar-open .side {
+    position: fixed;
+    top: 38px;                /* ≈ titlebar height */
+    left: 0;
+    bottom: 0;
+    width: min(320px, 85vw);
+    z-index: 100;
+    box-shadow: 2px 0 16px rgba(0,0,0,0.25);
+    display: flex;
+  }
+  .app.sidebar-open .sidebar-scrim {
+    display: block;
+    position: fixed;
+    top: 38px;
+    left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 99;
+  }
+
+  .main {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .ctx {
+    padding: 8px 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .ctx-opp { font-size: 12px; }
+  .ctx-meta { font-size: 10px; }
+  .tbadge { align-self: flex-end; }
+
+  /* Board: fit the viewport after accounting for .main padding + ranks column. */
+  .bwrap { --sq-size: min(48px, calc((100vw - 40px) / 8)); }
+
+  /* Board row stacks vertically so the result panel lives below the board. */
+  .board-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .result-slot {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .titlebar { padding: 8px 10px; }
+  .titlebar-text { font-size: 11px; }
+  .titlebar-author { font-size: 10px; right: 10px; }
+}
+
+/* Very small phones — drop the square size a little more so the board
+   always fits with room to breathe. */
+@media (max-width: 380px) {
+  .bwrap { --sq-size: calc((100vw - 36px) / 8); }
+  .ranks { font-size: 9px; }
+  .files { font-size: 9px; }
+}
