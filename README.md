@@ -1,4 +1,4 @@
-# blunder-trainer
+# my-lichess-blunders
 
 Puzzles from your own Lichess mistakes.
 
