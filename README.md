@@ -9,6 +9,14 @@ Train on puzzles generated from your own Lichess mistakes.
 - Filter puzzles by type (all / blunders / unseen) or by opening (ECO code)
 - Tracks solved/failed state across sessions in localStorage
 
+## Prerequisites
+
+- Node.js 20+
+- Stockfish on your `PATH`:
+  - macOS: `brew install stockfish`
+  - Debian/Ubuntu: `sudo apt install stockfish`
+  - Windows: download from <https://stockfishchess.org/download/> and add it to `PATH`
+
 ## Run locally
 
 ```bash
