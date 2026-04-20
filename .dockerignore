@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.claude
+.vscode
+.DS_Store
+npm-debug.log
+*.log
+README.md
