@@ -607,26 +607,31 @@ body {
      drop it on mobile to give the board more breathing room. */
   .puzzle-prompt { display: none; }
 
-  /* Compact result panel: hide the verbose eval + move-list sections on
-     mobile, and pull the primary "next puzzle" button to the top so it's
-     reachable without scrolling past analysis details. */
+  /* Compact result panel: the status line and action buttons come first
+     (so the next-puzzle button sits right under the board), with the
+     eval + move tables tucked underneath for users who want to scroll
+     for details. Flex `order` reshuffles without touching the markup. */
   .result {
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
+    gap: 4px;
   }
-  .result .r-section,
-  .result .r-evals,
-  .result .r-moves { display: none; }
-  .result .r-line { margin-bottom: 8px; font-size: 13px; order: 2; }
+  .result .r-line { margin-bottom: 4px; font-size: 13px; order: 1; }
   .result .r-acts {
-    order: 1;
+    order: 2;
     flex-direction: row;
     flex-wrap: wrap;
     gap: 6px;
+    margin-bottom: 6px;
   }
   .result .r-acts .abtn { flex: 1 1 45%; padding: 10px; font-size: 11px; }
   .result .r-acts .abtn.prim { flex: 1 1 100%; order: -1; }
+  .result .r-section { order: 3; font-size: 10px; margin-top: 6px; }
+  .result .r-evals   { order: 3; }
+  .result .r-moves   { order: 3; }
+  .result .r-evals .re,
+  .result .r-moves .rm { padding: 6px 8px; font-size: 11px; }
 
   /* Board: fit the viewport after accounting for .main padding + ranks column. */
   .bwrap { --sq-size: min(48px, calc((100vw - 40px) / 8)); }

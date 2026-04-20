@@ -24,6 +24,9 @@ interface BoardProps {
    *  when the user has revealed a wrong answer, so the correct square is
    *  visible alongside their mistake. Pass `null` otherwise. */
   bestRevealed: string | null;
+  /** Source square of the engine's best move — painted green alongside
+   *  `bestRevealed` so the user can see which piece should have moved. */
+  bestFromRevealed: string | null;
   /** If true, input is disabled (puzzle already answered). */
   revealed: boolean;
   /** Click handler. */
@@ -44,6 +47,7 @@ export function Board({
   flashOk,
   flashFail,
   bestRevealed,
+  bestFromRevealed,
   revealed,
   onSquareClick,
 }: BoardProps) {
@@ -79,9 +83,12 @@ export function Board({
       }
       if (sqn === flashOk) classes.push('flash-ok');
       if (sqn === flashFail) classes.push('flash-fail');
-      // The engine's best-move target only gets painted when the page has
-      // explicitly decided to reveal it (i.e. user answered wrong).
+      // The engine's best-move source + target both get painted when the
+      // page has explicitly decided to reveal them (i.e. user answered
+      // wrong). Painting the source square makes it obvious which piece
+      // the engine wanted to move.
       if (sqn === bestRevealed) classes.push('flash-ok');
+      if (sqn === bestFromRevealed) classes.push('flash-ok');
 
       cells.push(
         <div

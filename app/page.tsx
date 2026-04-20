@@ -41,6 +41,9 @@ export default function Page() {
   /** Destination square of the puzzle's best move — used to paint the
    *  correct square green when the user picks the wrong one. */
   const [bestTo, setBestTo] = useState<string | null>(null);
+  /** Source square of the puzzle's best move — painted green alongside
+   *  `bestTo` on a miss so the user can see which piece should have moved. */
+  const [bestFrom, setBestFrom] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [yourMove, setYourMove] = useState<string | null>(null);
   const [isOk, setIsOk] = useState(false);
@@ -110,12 +113,15 @@ export default function Page() {
       }
     }
     // Probe the best move on a clone so the main state stays on the
-    // "before" position — this gives us the destination square, which the
-    // board highlights green when the user picks a wrong move.
+    // "before" position — this gives us the source + destination squares,
+    // both of which the board highlights green when the user picks a wrong
+    // move (source so you can see which piece, destination for where).
+    let bestFromSq: string | null = null;
     let bestToSq: string | null = null;
     try {
       const probe = new Chess(c.fen());
       const m = probe.move(p.bestMove);
+      bestFromSq = m?.from ?? null;
       bestToSq = m?.to ?? null;
     } catch {
       /* Puzzle data is slightly malformed — no green hint, but playable. */
@@ -129,6 +135,7 @@ export default function Page() {
     setFlashOk(null);
     setFlashFail(null);
     setBestTo(bestToSq);
+    setBestFrom(bestFromSq);
     setRevealed(false);
     setYourMove(null);
     setLegalFrom(groupLegal(c));
@@ -365,6 +372,7 @@ export default function Page() {
                 flashOk={flashOk}
                 flashFail={flashFail}
                 bestRevealed={revealed && !isOk ? bestTo : null}
+                bestFromRevealed={revealed && !isOk ? bestFrom : null}
                 revealed={revealed}
                 onSquareClick={onSquareClick}
               />
