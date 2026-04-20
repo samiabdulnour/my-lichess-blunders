@@ -414,14 +414,14 @@ body {
   position: absolute;
   width: 18px; height: 18px;
   border-radius: 50%;
-  background: var(--green);
-  opacity: 0.7;
+  background: #4a4a4a;
+  opacity: 0.35;
   pointer-events: none;
   z-index: 3;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
 }
-.sq.cap-ring { box-shadow: inset 0 0 0 3px var(--green); }
+.sq.cap-ring { box-shadow: inset 0 0 0 3px rgba(74,74,74,0.55); }
 .sq.flash-ok   { background: rgba(45,166,106,0.55) !important; }
 .sq.flash-fail { background: rgba(192,57,43,0.55)  !important; }
 
@@ -572,19 +572,61 @@ body {
   }
 
   .main {
-    padding: 12px 10px;
-    gap: 10px;
+    padding: 8px 8px 16px;
+    gap: 8px;
   }
 
+  /* Compact context bar: single row, minimal metadata, turn badge inline.
+     The opening-name tail is dropped so the row fits comfortably on a
+     narrow phone; the full details live in the result panel below. */
   .ctx {
-    padding: 8px 10px;
+    padding: 6px 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .ctx > div:first-child { flex: 1; min-width: 0; }
+  .ctx-opp {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ctx-opp span.eco { display: none; }
+  .ctx-meta { font-size: 9px; margin-top: 2px; }
+  .tbadge {
+    font-size: 9px;
+    padding: 3px 7px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  /* The terminal-style "find the best move" prompt is pure decoration —
+     drop it on mobile to give the board more breathing room. */
+  .puzzle-prompt { display: none; }
+
+  /* Compact result panel: hide the verbose eval + move-list sections on
+     mobile, and pull the primary "next puzzle" button to the top so it's
+     reachable without scrolling past analysis details. */
+  .result {
+    padding: 10px 12px;
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
+  }
+  .result .r-section,
+  .result .r-evals,
+  .result .r-moves { display: none; }
+  .result .r-line { margin-bottom: 8px; font-size: 13px; order: 2; }
+  .result .r-acts {
+    order: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 6px;
   }
-  .ctx-opp { font-size: 12px; }
-  .ctx-meta { font-size: 10px; }
-  .tbadge { align-self: flex-end; }
+  .result .r-acts .abtn { flex: 1 1 45%; padding: 10px; font-size: 11px; }
+  .result .r-acts .abtn.prim { flex: 1 1 100%; order: -1; }
 
   /* Board: fit the viewport after accounting for .main padding + ranks column. */
   .bwrap { --sq-size: min(48px, calc((100vw - 40px) / 8)); }

@@ -38,6 +38,9 @@ export default function Page() {
   const [lastTo, setLastTo] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
   const [flashFail, setFlashFail] = useState<string | null>(null);
+  /** Destination square of the puzzle's best move — used to paint the
+   *  correct square green when the user picks the wrong one. */
+  const [bestTo, setBestTo] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [yourMove, setYourMove] = useState<string | null>(null);
   const [isOk, setIsOk] = useState(false);
@@ -106,6 +109,17 @@ export default function Page() {
         break;
       }
     }
+    // Probe the best move on a clone so the main state stays on the
+    // "before" position — this gives us the destination square, which the
+    // board highlights green when the user picks a wrong move.
+    let bestToSq: string | null = null;
+    try {
+      const probe = new Chess(c.fen());
+      const m = probe.move(p.bestMove);
+      bestToSq = m?.to ?? null;
+    } catch {
+      /* Puzzle data is slightly malformed — no green hint, but playable. */
+    }
     setCurrent(p);
     currentRef.current = p;
     setChess(c);
@@ -114,6 +128,7 @@ export default function Page() {
     setLastTo(null);
     setFlashOk(null);
     setFlashFail(null);
+    setBestTo(bestToSq);
     setRevealed(false);
     setYourMove(null);
     setLegalFrom(groupLegal(c));
@@ -169,12 +184,13 @@ export default function Page() {
     setYourMove(applied.san);
     setIsOk(ok);
 
+    // Paint the user's destination square green (correct) or red (wrong).
+    // These are persistent — they stay until the user advances to another
+    // puzzle, so they act as an "answer marker" on the board itself. The
+    // correct square (from `bestTo`) also turns green on a miss, handled
+    // by the Board component via the `bestRevealed` prop.
     if (ok) setFlashOk(mv.to);
     else setFlashFail(mv.to);
-    setTimeout(() => {
-      setFlashOk(null);
-      setFlashFail(null);
-    }, 600);
 
     setSolved((prev) => {
       if (prev[current.id]) return prev;
@@ -348,6 +364,7 @@ export default function Page() {
                 lastTo={lastTo}
                 flashOk={flashOk}
                 flashFail={flashFail}
+                bestRevealed={revealed && !isOk ? bestTo : null}
                 revealed={revealed}
                 onSquareClick={onSquareClick}
               />

@@ -16,10 +16,14 @@ interface BoardProps {
   lastFrom: string | null;
   /** Square highlighted as "last move to". */
   lastTo: string | null;
-  /** Square currently flashing green (correct answer). */
+  /** Square persistently painted green (user's correct move). */
   flashOk: string | null;
-  /** Square currently flashing red (wrong answer). */
+  /** Square persistently painted red (user's wrong move). */
   flashFail: string | null;
+  /** Destination square of the engine's best move — painted green only
+   *  when the user has revealed a wrong answer, so the correct square is
+   *  visible alongside their mistake. Pass `null` otherwise. */
+  bestRevealed: string | null;
   /** If true, input is disabled (puzzle already answered). */
   revealed: boolean;
   /** Click handler. */
@@ -39,6 +43,7 @@ export function Board({
   lastTo,
   flashOk,
   flashFail,
+  bestRevealed,
   revealed,
   onSquareClick,
 }: BoardProps) {
@@ -74,6 +79,9 @@ export function Board({
       }
       if (sqn === flashOk) classes.push('flash-ok');
       if (sqn === flashFail) classes.push('flash-fail');
+      // The engine's best-move target only gets painted when the page has
+      // explicitly decided to reveal it (i.e. user answered wrong).
+      if (sqn === bestRevealed) classes.push('flash-ok');
 
       cells.push(
         <div
