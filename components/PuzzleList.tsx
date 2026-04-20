@@ -21,13 +21,13 @@ interface PuzzleListProps {
   onClearAll: () => void;
 }
 
-/** Time-format buttons in the order Lichess presents them. */
-const SPEEDS: SpeedFilter[] = [
-  'all',
-  'bullet',
-  'blitz',
-  'rapid',
-  'classical',
+/** Time-format options in the order Lichess presents them. */
+const SPEEDS: { value: SpeedFilter; label: string }[] = [
+  { value: 'all', label: 'all time formats' },
+  { value: 'bullet', label: 'bullet' },
+  { value: 'blitz', label: 'blitz' },
+  { value: 'rapid', label: 'rapid' },
+  { value: 'classical', label: 'classical' },
 ];
 
 export function PuzzleList({
@@ -72,16 +72,22 @@ export function PuzzleList({
           </button>
         ))}
       </div>
-      <div className="speed-filter">
-        {SPEEDS.map((s) => (
-          <button
-            key={s}
-            className={'sf' + (speedFilter === s ? ' on' : '')}
-            onClick={() => onSpeedFilterChange(s)}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="eco-filter">
+        <label className="eco-filter-label" htmlFor="speed-select">
+          time format
+        </label>
+        <select
+          id="speed-select"
+          className="eco-select"
+          value={speedFilter}
+          onChange={(e) => onSpeedFilterChange(e.target.value as SpeedFilter)}
+        >
+          {SPEEDS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="eco-filter">
         <label className="eco-filter-label" htmlFor="eco-select">
