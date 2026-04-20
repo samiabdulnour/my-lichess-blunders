@@ -17,7 +17,7 @@ export function TerminalShell({ children }: TerminalShellProps) {
   return (
     <div className="window">
       <div className="titlebar">
-        <span className="titlebar-text">blunder-trainer</span>
+        <span className="titlebar-text">my-lichess-blunders</span>
         <a
           className="titlebar-author"
           href="https://github.com/samiabdulnour"
