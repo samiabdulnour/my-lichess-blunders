@@ -18,6 +18,15 @@ export function TerminalShell({ children }: TerminalShellProps) {
     <div className="window">
       <div className="titlebar">
         <span className="titlebar-text">blunder-trainer</span>
+        <a
+          className="titlebar-author"
+          href="https://github.com/samiabdulnour"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="View author on GitHub"
+        >
+          @samiabdulnour
+        </a>
       </div>
       <div className="app">{children}</div>
     </div>

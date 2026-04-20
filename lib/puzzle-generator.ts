@@ -1,6 +1,53 @@
 import type { ParsedGame, ParsedMove } from './pgn';
-import type { Puzzle } from './types';
+import type { GameSpeed, Puzzle } from './types';
 import { bestMoveSan, analyzePosition } from './stockfish';
+
+/**
+ * Pull the Lichess speed name out of the Event header. Lichess writes
+ * Events like "Rated blitz game" or "Rated 3+2 • Blitz Arena". We match
+ * the speed name case-insensitively and fall back to deriving it from
+ * the TimeControl header if needed.
+ */
+function deriveSpeed(headers: Record<string, string>): GameSpeed {
+  const event = (headers['event'] ?? '').toLowerCase();
+  if (event.includes('ultrabullet')) return 'ultraBullet';
+  if (event.includes('bullet')) return 'bullet';
+  if (event.includes('blitz')) return 'blitz';
+  if (event.includes('rapid')) return 'rapid';
+  if (event.includes('classical')) return 'classical';
+  if (event.includes('correspondence')) return 'correspondence';
+
+  // Fallback: classify by total estimated game length using Lichess's rule
+  //   bucket = base + 40 * increment   (in seconds)
+  const tc = headers['timecontrol'] ?? '';
+  if (!tc || tc === '-') return 'correspondence';
+  const m = tc.match(/^(\d+)(?:\+(\d+))?$/);
+  if (!m) return 'unknown';
+  const base = parseInt(m[1], 10);
+  const inc = m[2] ? parseInt(m[2], 10) : 0;
+  const bucket = base + 40 * inc;
+  if (bucket < 30) return 'ultraBullet';
+  if (bucket < 180) return 'bullet';
+  if (bucket < 480) return 'blitz';
+  if (bucket < 1500) return 'rapid';
+  return 'classical';
+}
+
+/**
+ * Render the PGN TimeControl header (e.g. "180+2") into the conventional
+ * "minutes+increment" form ("3+2"). Returns the raw string when it
+ * doesn't fit the pattern.
+ */
+function formatTimeControl(tc: string): string {
+  if (!tc || tc === '-') return 'corr.';
+  const m = tc.match(/^(\d+)(?:\+(\d+))?$/);
+  if (!m) return tc;
+  const base = parseInt(m[1], 10);
+  const inc = m[2] ? parseInt(m[2], 10) : 0;
+  // < 60s base => show seconds (e.g. ultraBullet "30+0"); otherwise minutes.
+  const baseDisplay = base < 60 ? `${base}s` : `${Math.round(base / 60)}`;
+  return `${baseDisplay}+${inc}`;
+}
 
 /**
  * Eval-drop thresholds (in centipawns) for puzzle classification.
@@ -50,6 +97,8 @@ export async function generatePuzzlesFromGame(
 
   const puzzles: Puzzle[] = [];
   const moves = game.moves;
+  const speed = deriveSpeed(game.headers);
+  const timeControl = formatTimeControl(game.headers['timecontrol'] ?? '');
 
   for (let i = 0; i < moves.length; i++) {
     const mv = moves[i];
@@ -104,6 +153,8 @@ export async function generatePuzzlesFromGame(
       evalAfter: evalAfterSide / 100,
       drop: dropCp / 100,
       type: dropCp >= THRESHOLDS.blunderCp ? 'blunder' : 'mistake',
+      speed,
+      timeControl,
     });
   }
 

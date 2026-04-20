@@ -38,6 +38,12 @@ export interface Puzzle {
   drop: number;
   /** Severity classification. */
   type: 'blunder' | 'mistake';
+  /** Lichess speed bucket (bullet/blitz/rapid/...). May be missing on
+   *  puzzles imported before this field existed. */
+  speed?: GameSpeed;
+  /** Display-form time control like "3+2" or "5+0". May be missing on
+   *  puzzles imported before this field existed. */
+  timeControl?: string;
 }
 
 export type SolveStatus = 'ok' | 'fail';
@@ -50,6 +56,19 @@ export type Filter = 'all' | 'blunder' | 'unseen';
  * matched as an exact ECO code prefix (e.g. `'B21'`).
  */
 export type EcoFilter = 'all' | string;
+
+/** Lichess game speed bucket. `'unknown'` covers PGNs with no Event tag. */
+export type GameSpeed =
+  | 'ultraBullet'
+  | 'bullet'
+  | 'blitz'
+  | 'rapid'
+  | 'classical'
+  | 'correspondence'
+  | 'unknown';
+
+/** Speed filter for the sidebar. `'all'` matches every puzzle. */
+export type SpeedFilter = 'all' | GameSpeed;
 
 export interface SessionStats {
   correct: number;

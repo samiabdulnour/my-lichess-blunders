@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Puzzle, SolveStatus, Filter, EcoFilter } from '@/lib/types';
+import type { Puzzle, SolveStatus, Filter, EcoFilter, SpeedFilter } from '@/lib/types';
 import { ecoName } from '@/lib/eco-names';
 import { ImportControls } from './ImportControls';
 
@@ -10,24 +10,37 @@ interface PuzzleListProps {
   filtered: Puzzle[];
   filter: Filter;
   ecoFilter: EcoFilter;
+  speedFilter: SpeedFilter;
   current: Puzzle | null;
   solved: Record<string, SolveStatus>;
   onFilterChange: (f: Filter) => void;
   onEcoFilterChange: (e: EcoFilter) => void;
+  onSpeedFilterChange: (s: SpeedFilter) => void;
   onSelect: (p: Puzzle) => void;
   onImport: (newPuzzles: Puzzle[]) => void;
   onClearAll: () => void;
 }
+
+/** Time-format buttons in the order Lichess presents them. */
+const SPEEDS: SpeedFilter[] = [
+  'all',
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
+];
 
 export function PuzzleList({
   all,
   filtered,
   filter,
   ecoFilter,
+  speedFilter,
   current,
   solved,
   onFilterChange,
   onEcoFilterChange,
+  onSpeedFilterChange,
   onSelect,
   onImport,
   onClearAll,
@@ -56,6 +69,17 @@ export function PuzzleList({
             onClick={() => onFilterChange(f)}
           >
             {f === 'blunder' ? 'blunders' : f}
+          </button>
+        ))}
+      </div>
+      <div className="speed-filter">
+        {SPEEDS.map((s) => (
+          <button
+            key={s}
+            className={'sf' + (speedFilter === s ? ' on' : '')}
+            onClick={() => onSpeedFilterChange(s)}
+          >
+            {s}
           </button>
         ))}
       </div>

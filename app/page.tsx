@@ -8,7 +8,14 @@ import { PuzzleList } from '@/components/PuzzleList';
 import { TerminalShell } from '@/components/TerminalShell';
 import { ResultPanel } from '@/components/ResultPanel';
 import { ecoName } from '@/lib/eco-names';
-import type { EcoFilter, Filter, Puzzle, SessionStats, SolveStatus } from '@/lib/types';
+import type {
+  EcoFilter,
+  Filter,
+  Puzzle,
+  SessionStats,
+  SolveStatus,
+  SpeedFilter,
+} from '@/lib/types';
 import {
   loadPuzzles,
   savePuzzles,
@@ -22,6 +29,7 @@ export default function Page() {
   const [all, setAll] = useState<Puzzle[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
   const [ecoFilter, setEcoFilter] = useState<EcoFilter>('all');
+  const [speedFilter, setSpeedFilter] = useState<SpeedFilter>('all');
   const [current, setCurrent] = useState<Puzzle | null>(null);
   const [chess, setChess] = useState<Chess>(() => new Chess());
   const [selected, setSelected] = useState<string | null>(null);
@@ -81,8 +89,11 @@ export default function Page() {
     if (ecoFilter !== 'all') {
       list = list.filter((p) => p.eco === ecoFilter);
     }
+    if (speedFilter !== 'all') {
+      list = list.filter((p) => p.speed === speedFilter);
+    }
     return list;
-  }, [all, filter, ecoFilter, solved]);
+  }, [all, filter, ecoFilter, speedFilter, solved]);
 
   /* ── Load a puzzle: replay its setup moves and hand over to the board ── */
   const loadPuzzle = useCallback((p: Puzzle) => {
@@ -271,10 +282,12 @@ export default function Page() {
         filtered={filtered}
         filter={filter}
         ecoFilter={ecoFilter}
+        speedFilter={speedFilter}
         current={current}
         solved={solved}
         onFilterChange={setFilter}
         onEcoFilterChange={setEcoFilter}
+        onSpeedFilterChange={setSpeedFilter}
         onSelect={loadPuzzle}
         onImport={handleImport}
         onClearAll={handleClearAll}
@@ -306,7 +319,17 @@ export default function Page() {
                   move <span>{mn}</span> · you play{' '}
                   <span>
                     {current.abdulsColor === 'white' ? '\u25CB' : '\u25CF'} {current.abdulsColor}
-                  </span>{' '}
+                  </span>
+                  {current.speed && current.speed !== 'unknown' && (
+                    <>
+                      {' '}
+                      ·{' '}
+                      <span>
+                        {current.speed}
+                        {current.timeControl ? ` ${current.timeControl}` : ''}
+                      </span>
+                    </>
+                  )}{' '}
                   · <span>{current.date.replace(/\./g, '-')}</span>
                 </div>
               </div>
