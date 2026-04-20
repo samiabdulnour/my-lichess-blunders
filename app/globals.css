@@ -260,8 +260,8 @@ body {
   background: rgba(45,166,106,0.07);
   border-left: 2px solid var(--green);
 }
-.pi.done-ok   { opacity: .45; }
-.pi.done-fail { opacity: .65; }
+.pi.done-ok   .pi-opp { color: var(--green); }
+.pi.done-fail .pi-opp { color: var(--red); }
 .pi-ico { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
 .pi-info { flex: 1; min-width: 0; }
 .pi-opp  { font-size: 11px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

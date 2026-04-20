@@ -24,6 +24,23 @@ export function ResultPanel({ puzzle, yourMove, isOk, onRetry, onNext }: ResultP
     return 'eb';
   };
 
+  /**
+   * Build a Lichess URL that opens the game at the exact puzzle position
+   * and from the side the user was playing. Lichess accepts:
+   *   /{gameId}            — white POV
+   *   /{gameId}/black      — black POV
+   *   …#N                  — jump to ply N
+   * Stripping any existing trailing slash or fragment from `puzzle.site`
+   * keeps the result clean if the upstream value ever changes shape.
+   */
+  const lichessUrl = (() => {
+    // Drop any existing fragment so we can attach our own ply anchor.
+    const base = puzzle.site.replace(/#.*$/, '').replace(/\/$/, '');
+    const ply = puzzle.setupMoves.length;
+    const pov = myC === 'black' ? '/black' : '';
+    return `${base}${pov}#${ply}`;
+  })();
+
   return (
     <div className="result">
       <div className="r-line" style={{ marginBottom: 10 }}>
@@ -67,7 +84,7 @@ export function ResultPanel({ puzzle, yourMove, isOk, onRetry, onNext }: ResultP
       <div className="r-acts">
         <button
           className="abtn lc"
-          onClick={() => window.open(puzzle.site, '_blank', 'noopener,noreferrer')}
+          onClick={() => window.open(lichessUrl, '_blank', 'noopener,noreferrer')}
         >
           open lichess
         </button>
