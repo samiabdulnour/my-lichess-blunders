@@ -143,6 +143,15 @@ body {
 .import-btn.prim:hover:not(:disabled) {
   background: rgba(45,166,106,0.18);
 }
+.import-btn.danger {
+  border-color: var(--border);
+  color: var(--red);
+}
+.import-btn.danger:hover:not(:disabled) {
+  border-color: var(--red);
+  background: rgba(192,57,43,0.06);
+  color: var(--red);
+}
 .import-status { font-size: 10px; line-height: 1.35; }
 .import-status.work { color: var(--yellow); }
 .import-status.ok   { color: var(--green); }

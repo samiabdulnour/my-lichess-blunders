@@ -78,6 +78,19 @@ export function mergePuzzles(a: Puzzle[], b: Puzzle[]): Puzzle[] {
 }
 
 /**
+ * Wipe all imported puzzles, solved progress, and the pagination cursor
+ * from localStorage. The username is preserved so the user doesn't have to
+ * retype it after clearing. Seed puzzles served from `/api/puzzles` are
+ * unaffected (they live in code, not storage).
+ */
+export function clearAll(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(KEY_PUZZLES);
+  window.localStorage.removeItem(KEY_SOLVED);
+  window.localStorage.removeItem(KEY_OLDEST);
+}
+
+/**
  * Cursor for "fetch older games" pagination. Stores the UNIX ms timestamp
  * of the oldest Lichess game already imported; the next batch fetches
  * games strictly older than this.

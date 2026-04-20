@@ -16,6 +16,7 @@ interface PuzzleListProps {
   onEcoFilterChange: (e: EcoFilter) => void;
   onSelect: (p: Puzzle) => void;
   onImport: (newPuzzles: Puzzle[]) => void;
+  onClearAll: () => void;
 }
 
 export function PuzzleList({
@@ -29,6 +30,7 @@ export function PuzzleList({
   onEcoFilterChange,
   onSelect,
   onImport,
+  onClearAll,
 }: PuzzleListProps) {
   /* Build the ECO option list from the puzzles we actually have. Every
      distinct ECO code, sorted, with its full opening name attached. */
@@ -42,7 +44,7 @@ export function PuzzleList({
 
   return (
     <div className="side">
-      <ImportControls onImport={onImport} />
+      <ImportControls onImport={onImport} onClearAll={onClearAll} />
       <div className="side-header">
         <div className="side-prompt">filter puzzles</div>
       </div>

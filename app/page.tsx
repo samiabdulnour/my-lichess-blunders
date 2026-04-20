@@ -15,6 +15,7 @@ import {
   loadSolved,
   saveSolved,
   mergePuzzles,
+  clearAll,
 } from '@/lib/storage';
 
 export default function Page() {
@@ -219,6 +220,32 @@ export default function Page() {
     [loadPuzzle]
   );
 
+  /**
+   * Wipe all imported puzzles + solved progress from localStorage and reset
+   * the in-memory state back to whatever the seed endpoint returns. Seeds
+   * live in code so they reappear immediately. Username is preserved.
+   */
+  const handleClearAll = useCallback(() => {
+    clearAll();
+    setSolved({});
+    setStats({ correct: 0, wrong: 0, streak: 0 });
+    setCurrent(null);
+    currentRef.current = null;
+    setAll([]);
+    setRevealed(false);
+    setYourMove(null);
+
+    // Reload the seed puzzles so the sidebar isn't empty after a clear.
+    fetch('/api/puzzles')
+      .then((r) => r.json())
+      .then((data: { puzzles: Puzzle[] }) => {
+        const seeds = data.puzzles ?? [];
+        setAll(seeds);
+        if (seeds.length > 0) loadPuzzle(seeds[0]);
+      })
+      .catch((err) => console.error('Failed to reload seed puzzles:', err));
+  }, [loadPuzzle]);
+
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -250,6 +277,7 @@ export default function Page() {
         onEcoFilterChange={setEcoFilter}
         onSelect={loadPuzzle}
         onImport={handleImport}
+        onClearAll={handleClearAll}
       />
 
       <div className="main">

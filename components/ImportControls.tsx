@@ -12,6 +12,8 @@ import {
 interface ImportControlsProps {
   /** Called as puzzles arrive. May be called many times during a streamed import. */
   onImport: (newPuzzles: Puzzle[]) => void;
+  /** Wipe all imported puzzles and solved progress from cache. */
+  onClearAll: () => void;
 }
 
 interface ImportStatus {
@@ -34,7 +36,7 @@ const DEFAULT_FETCH_MAX = 50;
  * parent via onImport as each game finishes analysis, so the sidebar list
  * grows in real-time.
  */
-export function ImportControls({ onImport }: ImportControlsProps) {
+export function ImportControls({ onImport, onClearAll }: ImportControlsProps) {
   const [username, setUsername] = useState('');
   const [status, setStatus] = useState<ImportStatus>({ kind: 'idle' });
   /**
@@ -275,6 +277,22 @@ export function ImportControls({ onImport }: ImportControlsProps) {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+      <button
+        className="import-btn danger"
+        disabled={working}
+        onClick={() => {
+          if (
+            window.confirm(
+              'Clear all imported puzzles and solved progress? Seed puzzles will remain.'
+            )
+          ) {
+            onClearAll();
+            setStatus({ kind: 'ok', message: 'cache cleared' });
+          }
+        }}
+      >
+        clear all puzzles
+      </button>
       {pct !== null && working && (
         <div className="import-progress" aria-label="analysis progress">
           <div className="import-progress-bar" style={{ width: pct + '%' }} />
