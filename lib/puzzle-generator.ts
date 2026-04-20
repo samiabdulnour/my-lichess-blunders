@@ -87,10 +87,12 @@ export async function generatePuzzlesFromGame(
     const setupMoves = moves.slice(0, i).map((m) => m.san);
 
     const opponent = userColor === 'w' ? game.black : game.white;
+    const player = userColor === 'w' ? game.white : game.black;
     puzzles.push({
       id: `${game.gameId ?? 'unknown'}_${mv.ply}`,
       gameId: game.gameId ?? 'unknown',
       site: game.site ?? 'https://lichess.org',
+      player,
       opponent,
       eco: game.eco,
       date: game.date,

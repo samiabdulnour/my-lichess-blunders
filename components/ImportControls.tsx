@@ -22,7 +22,7 @@ interface ImportStatus {
 }
 
 /** Upper cap for the "fetch from Lichess" button — matches the server side. */
-const DEFAULT_FETCH_MAX = 30;
+const DEFAULT_FETCH_MAX = 50;
 
 /**
  * Sidebar panel with:

@@ -3,62 +3,66 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #1e1e1e;
-  --bg2:       #252525;
-  --bg3:       #2d2d2d;
-  --border:    #3a3a3a;
-  --border2:   #4a4a4a;
-  --txt:       #c8c8c8;
-  --txt-dim:   #6a6a6a;
-  --txt-faint: #444;
-  --green:     #3dd68c;
+  /* Light surfaces */
+  --bg:        #ffffff;
+  --bg2:       #f7f7f7;
+  --bg3:       #ececec;
+  --border:    #e0e0e0;
+  --border2:   #c8c8c8;
+  /* Text */
+  --txt:       #111111;
+  --txt-dim:   #666666;
+  --txt-faint: #aaaaaa;
+  /* Accent colors — kept from the original palette */
+  --green:     #2da66a;
   --green-dim: #1f7a4f;
-  --yellow:    #e5c07b;
-  --red:       #e06c75;
-  --blue:      #61afef;
-  --cyan:      #56b6c2;
-  --prompt:    #98c379;
-  --cursor:    #528bff;
-  --sq-l:      #c8a96e;
-  --sq-d:      #7a5c38;
+  --yellow:    #b48a2a;
+  --red:       #c0392b;
+  --blue:      #2563c0;
+  --cyan:      #1f8c99;
+  --prompt:    #2da66a;
+  --cursor:    #2563c0;
+  /* Board squares — kept warm wood-tone */
+  --sq-l:      #e8d6a8;
+  --sq-d:      #b08858;
   --font: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
+html, body { height: 100%; }
+
 body {
   font-family: var(--font);
-  background: #141414;
+  background: var(--bg);
   color: var(--txt);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* Lock the body — only inner scroll regions move. */
+  overflow: hidden;
 }
 
+/* ── Outer frame: full-bleed, no rounded corners, no shadow ── */
 .window {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  margin: 12px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
-  /* Fixed height (not min-height) so inner regions get a bounded parent and
-     can own their own scrollbars instead of stretching the whole page. */
-  height: calc(100vh - 24px);
+  /* No margin, no border-radius, no box-shadow — just fill the viewport. */
+  height: 100vh;
+  width: 100vw;
 }
 
 .titlebar {
-  padding: 8px 16px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  /* Horizontal rule separating the window chrome from the sidebar + main. */
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
 }
 .titlebar-text {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--txt-dim);
   letter-spacing: 0.3px;
 }
 
@@ -66,17 +70,19 @@ body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Sidebar ── */
 .side {
-  width: 260px;
+  width: 320px;
   flex-shrink: 0;
   background: var(--bg);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 .side-header {
   padding: 10px 14px 8px;
@@ -86,8 +92,9 @@ body {
   font-size: 11px;
   color: var(--txt-dim);
   margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
-.side-prompt::before { content: '$ '; color: var(--prompt); }
 
 /* ── Import panel ── */
 .import-panel {
@@ -96,6 +103,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex-shrink: 0;
 }
 .import-panel .side-prompt { margin-bottom: 2px; }
 .import-input {
@@ -124,23 +132,22 @@ body {
 .import-btn:hover:not(:disabled) {
   border-color: var(--green);
   color: var(--green);
-  background: rgba(61,214,140,0.05);
+  background: rgba(45,166,106,0.06);
 }
 .import-btn:disabled { cursor: wait; opacity: 0.6; }
 .import-btn.prim {
   border-color: var(--green);
   color: var(--green);
-  background: rgba(61,214,140,0.07);
+  background: rgba(45,166,106,0.08);
 }
 .import-btn.prim:hover:not(:disabled) {
-  background: rgba(61,214,140,0.16);
+  background: rgba(45,166,106,0.18);
 }
 .import-status { font-size: 10px; line-height: 1.35; }
 .import-status.work { color: var(--yellow); }
 .import-status.ok   { color: var(--green); }
 .import-status.err  { color: var(--red); }
 
-/* Progress bar — shown during streamed imports. */
 .import-progress {
   position: relative;
   height: 10px;
@@ -152,7 +159,7 @@ body {
   position: absolute;
   inset: 0 auto 0 0;
   background: var(--green);
-  opacity: 0.55;
+  opacity: 0.5;
   transition: width 0.25s ease-out;
 }
 .import-progress-text {
@@ -163,7 +170,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.fbrow { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+.fbrow { display: flex; gap: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .fb {
   flex: 1; padding: 7px 8px;
   font-size: 10px; font-family: var(--font); font-weight: bold;
@@ -173,36 +180,79 @@ body {
   transition: all 0.1s;
 }
 .fb:last-child { border-right: none; }
-.fb.on { color: var(--green); background: rgba(61,214,140,0.07); }
+.fb.on { color: var(--green); background: rgba(45,166,106,0.08); }
 .fb:hover:not(.on) { color: var(--txt); background: var(--bg3); }
+
+/* Opening filter row */
+.eco-filter {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.eco-filter-label {
+  font-size: 10px;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.eco-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--txt);
+  padding: 5px 7px;
+  font-family: var(--font);
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+}
+.eco-select:focus { border-color: var(--green); }
 
 .qline {
   padding: 6px 14px;
   font-size: 10px; color: var(--txt-dim);
   border-bottom: 1px solid var(--border);
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 .qline span { color: var(--yellow); }
 
-.plist { flex: 1; overflow-y: auto; }
-.plist::-webkit-scrollbar { width: 4px; }
-.plist::-webkit-scrollbar-track { background: var(--bg); }
-.plist::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* ── The puzzle list owns its own scrollbar ── */
+.plist {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) var(--bg);
+}
+/* WebKit — visible, easy to grab */
+.plist::-webkit-scrollbar { width: 10px; }
+.plist::-webkit-scrollbar-track { background: var(--bg2); }
+.plist::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 0;
+  border: 2px solid var(--bg2);
+}
+.plist::-webkit-scrollbar-thumb:hover { background: #999; }
 
 .pi {
   padding: 8px 14px;
-  border-bottom: 1px solid rgba(58,58,58,0.5);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
   display: flex; align-items: center; gap: 8px;
   transition: background 0.08s;
 }
-.pi:hover { background: var(--bg3); }
+.pi:hover { background: var(--bg2); }
 .pi.cur {
-  background: rgba(61,214,140,0.06);
+  background: rgba(45,166,106,0.07);
   border-left: 2px solid var(--green);
 }
-.pi.done-ok   { opacity: .35; }
-.pi.done-fail { opacity: .55; }
+.pi.done-ok   { opacity: .45; }
+.pi.done-fail { opacity: .65; }
 .pi-ico { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
 .pi-info { flex: 1; min-width: 0; }
 .pi-opp  { font-size: 11px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -218,20 +268,11 @@ body {
   gap: 14px;
   overflow-y: auto;
   background: var(--bg);
+  min-height: 0;
 }
-.main::-webkit-scrollbar { width: 4px; }
-.main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-/* ── Terminal output lines ──
-   Width matches the board-row (480 board + 18 gap + 280 panel = 778), so
-   these lines visually left-align with the chessboard below. */
-.term-line {
-  width: 100%; max-width: 778px;
-  font-size: 12px;
-}
-.term-line .cmd::before { content: '~/chess $ '; color: var(--prompt); }
-.term-line .cmd { color: var(--txt-dim); }
-.term-line .out { color: var(--cyan); margin-top: 2px; }
+.main::-webkit-scrollbar { width: 8px; }
+.main::-webkit-scrollbar-track { background: var(--bg2); }
+.main::-webkit-scrollbar-thumb { background: var(--border2); }
 
 /* ── Context bar ── */
 .ctx {
@@ -254,8 +295,8 @@ body {
   padding: 4px 10px; letter-spacing: 1px;
   border: 1px solid;
 }
-.tb-w { color: var(--yellow); border-color: var(--yellow); background: rgba(229,192,123,0.08); }
-.tb-b { color: var(--cyan);   border-color: var(--cyan);   background: rgba(86,182,194,0.08); }
+.tb-w { color: var(--yellow); border-color: var(--yellow); background: rgba(180,138,42,0.08); }
+.tb-b { color: var(--cyan);   border-color: var(--cyan);   background: rgba(31,140,153,0.08); }
 
 /* ── Prompt line ── */
 .puzzle-prompt {
@@ -280,7 +321,7 @@ body {
   grid-template-columns: repeat(8, 60px);
   grid-template-rows: repeat(8, 60px);
   border: 1px solid var(--border2);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   user-select: none;
   gap: 0;
   font-size: 0;
@@ -297,25 +338,24 @@ body {
 .sq-d { background: var(--sq-d); }
 
 .sq.sel { box-shadow: inset 0 0 0 3px var(--green); z-index: 2; }
-.sq-l.lm { background: #b8b040 !important; }
-.sq-d.lm { background: #808020 !important; }
+.sq-l.lm { background: #d8c558 !important; }
+.sq-d.lm { background: #9a8030 !important; }
 
 .sq-dot-hint {
   position: absolute;
   width: 18px; height: 18px;
   border-radius: 50%;
-  background: #3dd68c;
-  opacity: 0.75;
+  background: var(--green);
+  opacity: 0.7;
   pointer-events: none;
   z-index: 3;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
 }
-.sq.cap-ring { box-shadow: inset 0 0 0 3px #3dd68c; }
-.sq.flash-ok   { background: rgba(61,214,140,0.5)  !important; }
-.sq.flash-fail { background: rgba(224,108,117,0.5) !important; }
+.sq.cap-ring { box-shadow: inset 0 0 0 3px var(--green); }
+.sq.flash-ok   { background: rgba(45,166,106,0.55) !important; }
+.sq.flash-fail { background: rgba(192,57,43,0.55)  !important; }
 
-/* Lichess cburnett SVG pieces — see public/pieces/cburnett/ */
 .piece {
   width: 54px;
   height: 54px;
@@ -324,11 +364,7 @@ body {
   z-index: 2;
 }
 
-/* ── Board + result row ──
-   The `.result-slot` is always in the DOM and always 280px wide, even when
-   empty, so the board's horizontal position is stable as soon as a puzzle
-   loads — no jitter when the ResultPanel appears. On narrow viewports the
-   slot wraps below the board. */
+/* ── Board + result row ── */
 .board-row {
   display: flex;
   flex-direction: row;
@@ -341,13 +377,10 @@ body {
 .result-slot {
   width: 280px;
   flex-shrink: 0;
-  /* Reserve vertical space too so layout doesn't settle on first reveal. */
   min-height: 1px;
 }
 
-/* ── Result panel ──
-   Narrow column (≈280px) designed to fit next to the 480px board. All
-   internal rows stack vertically to stay inside that width. */
+/* ── Result panel ── */
 .result {
   width: 100%;
   border: 1px solid var(--border);
@@ -364,9 +397,7 @@ body {
 .r-status-fail::before { content: '[MISS]   '; }
 
 .r-section { margin: 10px 0 6px; color: var(--txt-dim); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
-.r-section::before { content: '# '; color: var(--txt-faint); }
 
-/* Stacked rows inside the narrow panel. */
 .r-moves { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .rm {
   padding: 6px 10px;
@@ -379,9 +410,9 @@ body {
 }
 .rm-label { font-size: 9px; color: var(--txt-dim); text-transform: uppercase; letter-spacing: 1px; }
 .rm-val { font-size: 14px; font-weight: bold; }
-.rm.ok-move   { border-color: var(--green); background: rgba(61,214,140,0.05); }
+.rm.ok-move   { border-color: var(--green); background: rgba(45,166,106,0.05); }
 .rm.ok-move   .rm-val { color: var(--green); }
-.rm.fail-move { border-color: var(--red); background: rgba(224,108,117,0.05); }
+.rm.fail-move { border-color: var(--red); background: rgba(192,57,43,0.05); }
 .rm.fail-move .rm-val { color: var(--red); text-decoration: line-through; opacity: .6; }
 .rm.best-move .rm-val { color: var(--blue); }
 .rm.blunder-move .rm-val { color: var(--txt-dim); text-decoration: line-through; opacity: .4; }
@@ -412,11 +443,11 @@ body {
   text-transform: uppercase; letter-spacing: 1.5px;
   transition: all 0.1s;
 }
-.abtn:hover { border-color: var(--green); color: var(--green); background: rgba(61,214,140,0.05); }
-.abtn.prim  { border-color: var(--green); color: var(--green); background: rgba(61,214,140,0.07); }
-.abtn.prim:hover { background: rgba(61,214,140,0.15); }
-.abtn.lc    { border-color: var(--blue); color: var(--blue); background: rgba(97,175,239,0.05); }
-.abtn.lc:hover { background: rgba(97,175,239,0.12); }
+.abtn:hover { border-color: var(--green); color: var(--green); background: rgba(45,166,106,0.05); }
+.abtn.prim  { border-color: var(--green); color: var(--green); background: rgba(45,166,106,0.08); }
+.abtn.prim:hover { background: rgba(45,166,106,0.16); }
+.abtn.lc    { border-color: var(--blue); color: var(--blue); background: rgba(37,99,192,0.05); }
+.abtn.lc:hover { background: rgba(37,99,192,0.12); }
 
 /* ── Stats strip ── */
 .stats-strip {
@@ -438,10 +469,3 @@ body {
   width: 100%; max-width: 778px;
 }
 .empty-line { display: flex; gap: 8px; }
-.empty-line .p { color: var(--prompt); }
-
-.blink-cur {
-  display: inline-block; width: 8px; height: 14px;
-  background: var(--cursor); vertical-align: middle;
-  animation: blink 1.1s step-end infinite;
-}

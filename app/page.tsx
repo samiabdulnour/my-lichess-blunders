@@ -7,7 +7,8 @@ import { Board } from '@/components/Board';
 import { PuzzleList } from '@/components/PuzzleList';
 import { TerminalShell } from '@/components/TerminalShell';
 import { ResultPanel } from '@/components/ResultPanel';
-import type { Filter, Puzzle, SessionStats, SolveStatus } from '@/lib/types';
+import { ecoName } from '@/lib/eco-names';
+import type { EcoFilter, Filter, Puzzle, SessionStats, SolveStatus } from '@/lib/types';
 import {
   loadPuzzles,
   savePuzzles,
@@ -19,6 +20,7 @@ import {
 export default function Page() {
   const [all, setAll] = useState<Puzzle[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const [ecoFilter, setEcoFilter] = useState<EcoFilter>('all');
   const [current, setCurrent] = useState<Puzzle | null>(null);
   const [chess, setChess] = useState<Chess>(() => new Chess());
   const [selected, setSelected] = useState<string | null>(null);
@@ -68,12 +70,18 @@ export default function Page() {
     if (hydrated.current) saveSolved(solved);
   }, [solved]);
 
-  /* ── Derived: filtered puzzle list ── */
+  /* ── Derived: filtered puzzle list ──
+     Apply the type filter first, then narrow further by exact ECO code. */
   const filtered = useMemo(() => {
-    if (filter === 'all') return all;
-    if (filter === 'blunder') return all.filter((p) => p.type === 'blunder');
-    return all.filter((p) => !solved[p.id]);
-  }, [all, filter, solved]);
+    let list = all;
+    if (filter === 'blunder') list = list.filter((p) => p.type === 'blunder');
+    else if (filter === 'unseen') list = list.filter((p) => !solved[p.id]);
+
+    if (ecoFilter !== 'all') {
+      list = list.filter((p) => p.eco === ecoFilter);
+    }
+    return list;
+  }, [all, filter, ecoFilter, solved]);
 
   /* ── Load a puzzle: replay its setup moves and hand over to the board ── */
   const loadPuzzle = useCallback((p: Puzzle) => {
@@ -235,9 +243,11 @@ export default function Page() {
         all={all}
         filtered={filtered}
         filter={filter}
+        ecoFilter={ecoFilter}
         current={current}
         solved={solved}
         onFilterChange={setFilter}
+        onEcoFilterChange={setEcoFilter}
         onSelect={loadPuzzle}
         onImport={handleImport}
       />
@@ -246,29 +256,23 @@ export default function Page() {
         {!current ? (
           <div className="empty">
             <div className="empty-line">
-              <span className="p">~/chess $</span>
-              <span> blunder-trainer --interactive</span>
-            </div>
-            <div className="empty-line" style={{ color: 'var(--txt-dim)' }}>
-              <span>No puzzles loaded. Import a Lichess PGN from the sidebar.</span>
-            </div>
-            <div className="empty-line">
-              <span className="p">~/chess $</span>
-              <span className="blink-cur"> </span>
+              No puzzles loaded. Import a Lichess PGN from the sidebar.
             </div>
           </div>
         ) : (
           <>
-            <div className="term-line">
-              <span className="cmd">
-                puzzle load --game {current.gameId} --move {mn}
-              </span>
-            </div>
-
             <div className="ctx">
               <div>
                 <div className="ctx-opp">
-                  vs {current.opponent} <span className="eco">[{current.eco}]</span>
+                  {current.player
+                    ? current.abdulsColor === 'white'
+                      ? `${current.player} vs ${current.opponent}`
+                      : `${current.opponent} vs ${current.player}`
+                    : `vs ${current.opponent}`}{' '}
+                  <span className="eco">
+                    [{current.eco}
+                    {ecoName(current.eco) ? ` — ${ecoName(current.eco)}` : ''}]
+                  </span>
                 </div>
                 <div className="ctx-meta">
                   move <span>{mn}</span> · you play{' '}

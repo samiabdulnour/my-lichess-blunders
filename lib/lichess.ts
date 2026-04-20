@@ -6,7 +6,7 @@
  * understands PGN with `[%eval ...]` comments.
  *
  *   GET https://lichess.org/api/games/user/{username}
- *     ?max=30
+ *     ?max=50
  *     &tags=true         ← headers like [White], [Black], [ECO], [Date]
  *     &evals=true        ← inline `{ [%eval 0.32] }` comments per ply
  *     &clocks=false
@@ -36,7 +36,7 @@ export interface FetchLichessPgnOpts {
 }
 
 /** Absolute upper bound we enforce on the server, regardless of client input. */
-export const LICHESS_MAX_GAMES = 30;
+export const LICHESS_MAX_GAMES = 50;
 
 /**
  * Fetch up to `max` games for `username` from Lichess as a single PGN blob.

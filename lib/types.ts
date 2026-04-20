@@ -10,6 +10,9 @@ export interface Puzzle {
   gameId: string;
   /** URL to the original game on lichess.org. */
   site: string;
+  /** The user's own player name in this game (display only). May be missing
+   *  on puzzles imported before this field existed. */
+  player?: string;
   /** Opponent name (display only). */
   opponent: string;
   /** Opening ECO code, e.g. "C50". */
@@ -40,6 +43,13 @@ export interface Puzzle {
 export type SolveStatus = 'ok' | 'fail';
 
 export type Filter = 'all' | 'blunder' | 'unseen';
+
+/**
+ * ECO opening filter. `'all'` matches every puzzle. A single letter
+ * (`'A'`–`'E'`) matches the whole opening family. Any other string is
+ * matched as an exact ECO code prefix (e.g. `'B21'`).
+ */
+export type EcoFilter = 'all' | string;
 
 export interface SessionStats {
   correct: number;
