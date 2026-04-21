@@ -192,12 +192,37 @@ export default function Page() {
     setIsOk(ok);
 
     // Paint the user's destination square green (correct) or red (wrong).
-    // These are persistent — they stay until the user advances to another
-    // puzzle, so they act as an "answer marker" on the board itself. The
-    // correct square (from `bestTo`) also turns green on a miss, handled
-    // by the Board component via the `bestRevealed` prop.
-    if (ok) setFlashOk(mv.to);
-    else setFlashFail(mv.to);
+    // On a correct move the green flash is persistent. On a wrong move the
+    // red flash shows briefly, then we rewind and replay the engine's best
+    // move so the right piece physically travels to the right square —
+    // that reads much more clearly than two static green squares on an
+    // unchanged board.
+    if (ok) {
+      setFlashOk(mv.to);
+    } else {
+      setFlashFail(mv.to);
+
+      const beforeFen = chess.fen();
+      const bestSan = current.bestMove;
+      const puzzleId = current.id;
+      setTimeout(() => {
+        // Bail if the user advanced to another puzzle while we were waiting.
+        if (currentRef.current?.id !== puzzleId) return;
+        const replay = new Chess(beforeFen);
+        let bestApplied;
+        try {
+          bestApplied = replay.move(bestSan);
+        } catch {
+          return;
+        }
+        if (!bestApplied) return;
+        setChess(replay);
+        setLastFrom(bestApplied.from);
+        setLastTo(bestApplied.to);
+        setFlashFail(null);
+        setFlashOk(bestApplied.to);
+      }, 900);
+    }
 
     setSolved((prev) => {
       if (prev[current.id]) return prev;
