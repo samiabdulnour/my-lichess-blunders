@@ -416,9 +416,6 @@ export default function Page() {
 
   /* ── Render ── */
   const mn = current ? Math.floor(current.setupMoves.length / 2) + 1 : 0;
-  const turn = chess.turn();
-  const turnLabel = turn === 'w' ? 'WHITE TO MOVE' : 'BLACK TO MOVE';
-  const turnClass = turn === 'w' ? 'tb-w' : 'tb-b';
 
   return (
     <TerminalShell loadedCount={all.length} stats={stats}>
@@ -478,7 +475,6 @@ export default function Page() {
                   · <span>{current.date.replace(/\./g, '-')}</span>
                 </div>
               </div>
-              <span className={`tbadge ${turnClass}`}>{turnLabel}</span>
             </div>
 
             <div className="puzzle-prompt">find the best move</div>
@@ -516,6 +512,25 @@ export default function Page() {
                   />
                 ) : (
                   <div className="pre-result">
+                    <div className="r-line">
+                      <span
+                        className={
+                          current.abdulsColor === 'white'
+                            ? 'r-status-turn-w'
+                            : 'r-status-turn-b'
+                        }
+                      ></span>
+                      <span
+                        style={{
+                          color:
+                            current.abdulsColor === 'white'
+                              ? 'var(--yellow)'
+                              : 'var(--cyan)',
+                        }}
+                      >
+                        {current.abdulsColor} to move
+                      </span>
+                    </div>
                     <button
                       className="abtn"
                       onClick={showSolution}

@@ -342,13 +342,6 @@ body {
 .ctx-meta { font-size: 10px; color: var(--txt-dim); margin-top: 3px; }
 .ctx-meta span { color: var(--yellow); }
 
-.tbadge {
-  font-size: 10px; font-family: var(--font); font-weight: bold;
-  padding: 4px 10px; letter-spacing: 1px;
-  border: 1px solid;
-}
-.tb-w { color: var(--yellow); border-color: var(--yellow); background: rgba(180,138,42,0.08); }
-.tb-b { color: var(--cyan);   border-color: var(--cyan);   background: rgba(31,140,153,0.08); }
 
 /* ── Prompt line ── */
 .puzzle-prompt {
@@ -508,8 +501,12 @@ body {
 .r-line { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 3px; }
 .r-status-ok   { color: var(--green); }
 .r-status-fail { color: var(--red); }
-.r-status-ok::before   { content: '[OK]     '; }
-.r-status-fail::before { content: '[MISS]   '; }
+.r-status-turn-w { color: var(--yellow); }
+.r-status-turn-b { color: var(--cyan); }
+.r-status-ok::before     { content: '[OK]     '; }
+.r-status-fail::before   { content: '[MISS]   '; }
+.r-status-turn-w::before,
+.r-status-turn-b::before { content: '[TURN]   '; }
 
 .r-section { margin: 10px 0 6px; color: var(--txt-dim); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
 
