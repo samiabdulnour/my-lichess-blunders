@@ -48,6 +48,10 @@ export default function Page() {
    *  that slides it from the `.to` square back to `.from` — the visual
    *  "bounce" after a wrong move, matching the Lichess puzzle feel. */
   const [bounceBack, setBounceBack] = useState<{ from: string; to: string } | null>(null);
+  /** When set, the piece at `.to` is animated sliding in from `.from`
+   *  — used on puzzle load to replay the opponent's blunder so the user
+   *  sees what just happened before they have to respond. */
+  const [introMove, setIntroMove] = useState<{ from: string; to: string } | null>(null);
   /** SANs of every wrong move the user has tried on the current puzzle.
    *  Surfaced in the result panel so the user can see what they tried
    *  before finding the answer or giving up. */
@@ -110,14 +114,23 @@ export default function Page() {
     return list;
   }, [all, filter, ecoFilter, speedFilter, solved]);
 
-  /* ── Load a puzzle: replay its setup moves and hand over to the board ── */
+  /* ── Load a puzzle: replay its setup moves and hand over to the board ──
+     We also capture the opponent's last move (the final setup move) so
+     the board can animate it sliding in — the user sees the blunder
+     happen on load rather than arriving cold on a puzzle position. */
   const loadPuzzle = useCallback((p: Puzzle) => {
     const c = new Chess();
-    for (const mv of p.setupMoves) {
+    let lastMoveFrom: string | null = null;
+    let lastMoveTo: string | null = null;
+    for (let i = 0; i < p.setupMoves.length; i++) {
       try {
-        c.move(mv);
+        const applied = c.move(p.setupMoves[i]);
+        if (applied && i === p.setupMoves.length - 1) {
+          lastMoveFrom = applied.from;
+          lastMoveTo = applied.to;
+        }
       } catch (err) {
-        console.warn(`Illegal setup move "${mv}" in puzzle ${p.id}`, err);
+        console.warn(`Illegal setup move "${p.setupMoves[i]}" in puzzle ${p.id}`, err);
         break;
       }
     }
@@ -125,8 +138,8 @@ export default function Page() {
     currentRef.current = p;
     setChess(c);
     setSelected(null);
-    setLastFrom(null);
-    setLastTo(null);
+    setLastFrom(lastMoveFrom);
+    setLastTo(lastMoveTo);
     setFlashOk(null);
     setFlashFail(null);
     setRevealed(false);
@@ -135,6 +148,20 @@ export default function Page() {
     setBounceBack(null);
     setAttempts([]);
     setLegalFrom(groupLegal(c));
+
+    // Intro animation: slide the opponent's last move in. The piece
+    // already lives on `to` (we applied every setup move above); the
+    // Board translates it visually from `from` back to 0 over ~350ms.
+    if (lastMoveFrom && lastMoveTo) {
+      setIntroMove({ from: lastMoveFrom, to: lastMoveTo });
+      const id = p.id;
+      setTimeout(() => {
+        if (currentRef.current?.id !== id) return;
+        setIntroMove(null);
+      }, 400);
+    } else {
+      setIntroMove(null);
+    }
   }, []);
 
   /* ── Handle a click on a board square ── */
@@ -467,6 +494,7 @@ export default function Page() {
                 flashOk={flashOk}
                 flashFail={flashFail}
                 bounceBack={bounceBack}
+                introMove={introMove}
                 revealed={revealed || awaitingRetry}
                 onSquareClick={onSquareClick}
                 onDragMove={makeMove}

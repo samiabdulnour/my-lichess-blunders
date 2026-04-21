@@ -447,17 +447,23 @@ body {
 }
 .piece-wrap:active { cursor: grabbing; }
 
-/* Bounce-back: when a wrong move is rewound, the piece starts visually
-   at the wrong destination (translated by --bx/--by squares) and slides
-   back to its home square. --sq-size is the current square size. */
-@keyframes piece-bounce-back {
+/* Shared move animation: the piece sits in its DOM square and slides
+   from a translated starting position (--bx/--by in square units) back
+   to (0, 0). Used for both the wrong-move bounce-back and the puzzle-
+   load intro that replays the opponent's move. --sq-size scales it. */
+@keyframes piece-slide-in {
   from { transform: translate(calc(var(--bx) * var(--sq-size, 60px)), calc(var(--by) * var(--sq-size, 60px))); }
   to   { transform: translate(0, 0); }
 }
-.piece-wrap.bouncing {
-  animation: piece-bounce-back 300ms ease-out;
+.piece-wrap.animating {
+  animation: piece-slide-in 300ms ease-out;
   cursor: default;
+  pointer-events: none;
 }
+
+/* While being dragged, fade the original so the user sees which piece
+   is moving without it competing with the browser's drag image. */
+.piece-wrap.dragging-source { opacity: 0.35; }
 
 /* Lichess-style tried-moves list: muted warning background, no
    strikethrough (these weren't the solution, just the user's guesses). */

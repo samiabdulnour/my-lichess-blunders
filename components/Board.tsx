@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Chess, Move } from 'chess.js';
 import { Piece } from './Piece';
 
@@ -23,15 +23,15 @@ interface BoardProps {
   /** If set, the piece at `.from` gets a CSS bounce-back animation
    *  starting from the `.to` square — used to rewind a wrong move. */
   bounceBack: { from: string; to: string } | null;
+  /** If set, the piece at `.to` gets a slide-in animation starting
+   *  from `.from` — used on puzzle load to replay the opponent's move. */
+  introMove: { from: string; to: string } | null;
   /** If true, input is disabled (puzzle already answered, or the board
    *  is mid-bounce from a wrong move). */
   revealed: boolean;
   /** Click handler. */
   onSquareClick: (square: string) => void;
-  /** Drag handler. Fires when the user drags a piece from one square to
-   *  another. Receives the target `to` square and the legal Move that
-   *  matches — the parent applies it via the same `makeMove` logic the
-   *  click path uses. */
+  /** Drag handler. Receives the legal Move to apply. */
   onDragMove: (move: Move) => void;
 }
 
@@ -50,6 +50,7 @@ export function Board({
   flashOk,
   flashFail,
   bounceBack,
+  introMove,
   revealed,
   onSquareClick,
   onDragMove,
@@ -57,32 +58,52 @@ export function Board({
   const flipped = orientation === 'black';
   const pos = useMemo(() => chess.board(), [chess]);
 
-  const legalTargets = useMemo(() => {
-    if (!selected) return new Set<string>();
-    const moves = legalFrom[selected] ?? [];
-    return new Set(moves.map((m) => m.to));
-  }, [selected, legalFrom]);
+  /** Source square of the piece currently being dragged. Mirrors the
+   *  normal `selected` state for the duration of the drag so the legal-
+   *  target dots + capture rings render exactly as they would on click. */
+  const [dragFrom, setDragFrom] = useState<string | null>(null);
 
-  // Bounce-back: compute the pixel offset between the wrong destination
-  // and the piece's origin, in the board's visual coordinate system. We
-  // hand it to CSS via custom properties so the keyframe animation can
-  // translate from (dx, dy) back to (0, 0).
-  const bounceDelta = useMemo(() => {
-    if (!bounceBack) return null;
-    const visual = (sqn: string) => {
+  // During a drag OR a regular selection, both kinds of "source" contribute
+  // to the target-hint set. `dragFrom` takes precedence since the user is
+  // actively holding a piece.
+  const hintSource = dragFrom ?? selected;
+  const legalTargets = useMemo(() => {
+    if (!hintSource) return new Set<string>();
+    const moves = legalFrom[hintSource] ?? [];
+    return new Set(moves.map((m) => m.to));
+  }, [hintSource, legalFrom]);
+
+  // Shared visual-coord helper used by both animation paths.
+  const visual = useMemo(
+    () => (sqn: string) => {
       const col = sqn.charCodeAt(0) - 97;
       const row = 8 - parseInt(sqn[1], 10);
       return {
         vc: flipped ? 7 - col : col,
         vr: flipped ? 7 - row : row,
       };
-    };
+    },
+    [flipped]
+  );
+
+  // Bounce-back offset (square units). Piece sits at `from` in the DOM
+  // and animates from translate(to-from) back to (0,0).
+  const bounceDelta = useMemo(() => {
+    if (!bounceBack) return null;
     const f = visual(bounceBack.from);
     const t = visual(bounceBack.to);
-    // Expressed in "squares"; the CSS multiplies by --sq-size to get
-    // pixels. Avoids baking a fixed square size into JS math.
     return { dx: t.vc - f.vc, dy: t.vr - f.vr };
-  }, [bounceBack, flipped]);
+  }, [bounceBack, visual]);
+
+  // Intro offset (square units). Piece sits at `to` in the DOM and
+  // animates from translate(from-to) back to (0,0) so it appears to
+  // slide in from its origin.
+  const introDelta = useMemo(() => {
+    if (!introMove) return null;
+    const f = visual(introMove.from);
+    const t = visual(introMove.to);
+    return { dx: f.vc - t.vc, dy: f.vr - t.vr };
+  }, [introMove, visual]);
 
   const ranks = [];
   for (let r = 0; r < 8; r++) ranks.push(flipped ? r + 1 : 8 - r);
@@ -92,25 +113,25 @@ export function Board({
 
   const myColor = chess.turn();
 
-  // Drag handlers. We set the source square on dragstart, allow the drop
-  // on any square (HTML5 needs a preventDefault on dragover), and on drop
-  // look up a legal move matching (from → to) and hand it to the parent.
   const handleDragStart = (e: React.DragEvent, sqn: string) => {
     if (revealed) {
       e.preventDefault();
       return;
     }
-    const piece = (() => {
-      const col = sqn.charCodeAt(0) - 97;
-      const row = 8 - parseInt(sqn[1], 10);
-      return pos[row][col];
-    })();
+    const col = sqn.charCodeAt(0) - 97;
+    const row = 8 - parseInt(sqn[1], 10);
+    const piece = pos[row][col];
     if (!piece || piece.color !== myColor) {
       e.preventDefault();
       return;
     }
     e.dataTransfer.setData('text/plain', sqn);
     e.dataTransfer.effectAllowed = 'move';
+    setDragFrom(sqn);
+  };
+
+  const handleDragEnd = () => {
+    setDragFrom(null);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -123,6 +144,7 @@ export function Board({
     if (revealed) return;
     e.preventDefault();
     const from = e.dataTransfer.getData('text/plain');
+    setDragFrom(null);
     if (!from || from === to) return;
     const cands = (legalFrom[from] ?? []).filter((m) => m.to === to);
     if (cands.length === 0) return;
@@ -141,7 +163,7 @@ export function Board({
 
       const classes = ['sq', light ? 'sq-l' : 'sq-d'];
       if (sqn === lastFrom || sqn === lastTo) classes.push('lm');
-      if (sqn === selected) classes.push('sel');
+      if (sqn === selected || sqn === dragFrom) classes.push('sel');
       if (!revealed && legalTargets.has(sqn)) {
         if (piece) classes.push('cap-ring');
       }
@@ -150,6 +172,24 @@ export function Board({
 
       const isBouncing =
         bounceBack !== null && sqn === bounceBack.from && piece !== null;
+      const isIntro = introMove !== null && sqn === introMove.to && piece !== null;
+      const isDragSource = dragFrom === sqn && piece !== null;
+
+      // Compose the piece-wrap class + inline CSS vars. Only one of
+      // the two animations should apply at a time (bounce is wrong-move
+      // rewind, intro is opponent-move replay — they don't overlap).
+      let wrapClass = 'piece-wrap';
+      let wrapStyle: React.CSSProperties | undefined;
+      const activeDelta =
+        isBouncing && bounceDelta ? bounceDelta : isIntro && introDelta ? introDelta : null;
+      if (activeDelta) {
+        wrapClass += ' animating';
+        wrapStyle = {
+          '--bx': `${activeDelta.dx}`,
+          '--by': `${activeDelta.dy}`,
+        } as React.CSSProperties;
+      }
+      if (isDragSource) wrapClass += ' dragging-source';
 
       cells.push(
         <div
@@ -165,17 +205,11 @@ export function Board({
           )}
           {piece && (
             <div
-              className={'piece-wrap' + (isBouncing ? ' bouncing' : '')}
-              style={
-                isBouncing && bounceDelta
-                  ? ({
-                      '--bx': `${bounceDelta.dx}`,
-                      '--by': `${bounceDelta.dy}`,
-                    } as React.CSSProperties)
-                  : undefined
-              }
+              className={wrapClass}
+              style={wrapStyle}
               draggable={!revealed}
               onDragStart={(e) => handleDragStart(e, sqn)}
+              onDragEnd={handleDragEnd}
             >
               <Piece color={piece.color} type={piece.type} />
             </div>
