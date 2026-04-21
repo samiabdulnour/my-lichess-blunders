@@ -38,18 +38,20 @@ export default function Page() {
   const [lastTo, setLastTo] = useState<string | null>(null);
   const [flashOk, setFlashOk] = useState<string | null>(null);
   const [flashFail, setFlashFail] = useState<string | null>(null);
-  /** Destination square of the puzzle's best move — used to paint the
-   *  correct square green when the user picks the wrong one. */
-  const [bestTo, setBestTo] = useState<string | null>(null);
-  /** Source square of the puzzle's best move — painted green alongside
-   *  `bestTo` on a miss so the user can see which piece should have moved. */
-  const [bestFrom, setBestFrom] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [yourMove, setYourMove] = useState<string | null>(null);
   const [isOk, setIsOk] = useState(false);
   /** True while a wrong move is flashing red and being undone. Blocks
    *  further input during that short window. */
   const [awaitingRetry, setAwaitingRetry] = useState(false);
+  /** When set, the piece at `.from` is rendered with a CSS animation
+   *  that slides it from the `.to` square back to `.from` — the visual
+   *  "bounce" after a wrong move, matching the Lichess puzzle feel. */
+  const [bounceBack, setBounceBack] = useState<{ from: string; to: string } | null>(null);
+  /** SANs of every wrong move the user has tried on the current puzzle.
+   *  Surfaced in the result panel so the user can see what they tried
+   *  before finding the answer or giving up. */
+  const [attempts, setAttempts] = useState<string[]>([]);
   const [solved, setSolved] = useState<Record<string, SolveStatus>>({});
   const [stats, setStats] = useState<SessionStats>({ correct: 0, wrong: 0, streak: 0 });
   const hydrated = useRef(false);
@@ -119,20 +121,6 @@ export default function Page() {
         break;
       }
     }
-    // Probe the best move on a clone so the main state stays on the
-    // "before" position — this gives us the source + destination squares,
-    // both of which the board highlights green when the user picks a wrong
-    // move (source so you can see which piece, destination for where).
-    let bestFromSq: string | null = null;
-    let bestToSq: string | null = null;
-    try {
-      const probe = new Chess(c.fen());
-      const m = probe.move(p.bestMove);
-      bestFromSq = m?.from ?? null;
-      bestToSq = m?.to ?? null;
-    } catch {
-      /* Puzzle data is slightly malformed — no green hint, but playable. */
-    }
     setCurrent(p);
     currentRef.current = p;
     setChess(c);
@@ -141,11 +129,11 @@ export default function Page() {
     setLastTo(null);
     setFlashOk(null);
     setFlashFail(null);
-    setBestTo(bestToSq);
-    setBestFrom(bestFromSq);
     setRevealed(false);
     setYourMove(null);
     setAwaitingRetry(false);
+    setBounceBack(null);
+    setAttempts([]);
     setLegalFrom(groupLegal(c));
   }, []);
 
@@ -223,14 +211,20 @@ export default function Page() {
     }
 
     // ── Wrong move ──
-    // Briefly show the piece on its landing square with a red flash,
-    // then rewind so the user can try a different move.
+    // Show the piece landing on its (wrong) square with a red flash, then
+    // slide it back to its origin — two phases, so the user gets the
+    // Lichess-style "nope, try again" feedback:
+    //   · phase 1 (red flash, 400ms): piece sits at destination, red.
+    //   · phase 2 (bounce, 300ms): piece animates back to source.
     setChess(next);
     setSelected(null);
     setLastFrom(mv.from);
     setLastTo(mv.to);
     setFlashFail(mv.to);
     setAwaitingRetry(true);
+
+    // Track the attempt so we can surface it in the result panel.
+    setAttempts((prev) => (prev.includes(applied.san) ? prev : [...prev, applied.san]));
 
     // Record the miss exactly once per puzzle.
     if (recordedRef.current !== current.id) {
@@ -247,25 +241,36 @@ export default function Page() {
 
     const beforeFen = chess.fen();
     const puzzleId = current.id;
+    const bounceFrom = mv.from;
+    const bounceTo = mv.to;
+
+    // Phase 1 → Phase 2: rewind the position so the piece is back at
+    // its origin in the DOM, then apply the bounce-back animation.
     setTimeout(() => {
-      // Bail if the user advanced to another puzzle while we were waiting.
       if (currentRef.current?.id !== puzzleId) return;
       const rewind = new Chess(beforeFen);
       setChess(rewind);
       setLastFrom(null);
       setLastTo(null);
       setFlashFail(null);
-      setAwaitingRetry(false);
       setLegalFrom(groupLegal(rewind));
+      setBounceBack({ from: bounceFrom, to: bounceTo });
+    }, 400);
+
+    // Phase 2 → done: clear the animation state and unlock input.
+    setTimeout(() => {
+      if (currentRef.current?.id !== puzzleId) return;
+      setBounceBack(null);
+      setAwaitingRetry(false);
     }, 700);
   };
 
   /* ── Give up: reveal the engine's best move ──
-     Same replay flow we used to run on a wrong answer: rewind to the
-     "before" position and play the engine's move so the right piece
-     travels to the right square. The result panel then appears with
-     "you played = —" to flag that the solution was shown rather than
-     found. */
+     Plays the engine's move on the board so the right piece travels to
+     the right square, then opens the result panel with a "solution
+     revealed" status and "—" in the "you played" slot. The source
+     square gets the same yellow last-move highlight used after a
+     correct solve, so the pre- and post-reveal views stay consistent. */
   const showSolution = useCallback(() => {
     if (!current || revealed || awaitingRetry) return;
     const beforeFen = chess.fen();
@@ -461,10 +466,10 @@ export default function Page() {
                 lastTo={lastTo}
                 flashOk={flashOk}
                 flashFail={flashFail}
-                bestRevealed={revealed && !isOk ? bestTo : null}
-                bestFromRevealed={revealed && !isOk ? bestFrom : null}
-                revealed={revealed}
+                bounceBack={bounceBack}
+                revealed={revealed || awaitingRetry}
                 onSquareClick={onSquareClick}
+                onDragMove={makeMove}
               />
 
               {/* Always reserve the 280px panel slot so the board doesn't shift
@@ -476,16 +481,13 @@ export default function Page() {
                   <ResultPanel
                     puzzle={current}
                     yourMove={yourMove}
+                    attempts={attempts}
                     isOk={isOk}
                     onRetry={retry}
                     onNext={next}
                   />
                 ) : (
                   <div className="pre-result">
-                    <div className="pre-result-hint">
-                      make a move on the board. wrong moves bounce back —
-                      keep trying until you find the engine's choice.
-                    </div>
                     <button
                       className="abtn"
                       onClick={showSolution}

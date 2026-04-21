@@ -5,6 +5,11 @@ import type { Puzzle } from '@/lib/types';
 interface ResultPanelProps {
   puzzle: Puzzle;
   yourMove: string;
+  /** SANs of every wrong move the user tried on this puzzle before
+   *  finding the solution (or giving up). Empty for a clean first-try
+   *  solve; for a solved-with-mistakes or give-up result, the list is
+   *  rendered so the user can see what they tried. */
+  attempts: string[];
   isOk: boolean;
   onRetry: () => void;
   onNext: () => void;
@@ -15,7 +20,7 @@ const fmtEval = (v: number) => {
   return (v >= 0 ? '+' : '') + v.toFixed(1);
 };
 
-export function ResultPanel({ puzzle, yourMove, isOk, onRetry, onNext }: ResultPanelProps) {
+export function ResultPanel({ puzzle, yourMove, attempts, isOk, onRetry, onNext }: ResultPanelProps) {
   const myC = puzzle.abdulsColor;
   const evalClass = (v: number) => {
     const good = myC === 'white' ? v > 0.3 : v < -0.3;
@@ -79,6 +84,14 @@ export function ResultPanel({ puzzle, yourMove, isOk, onRetry, onNext }: ResultP
           <div className="rm-label">you played</div>
           <div className="rm-val">{yourMove}</div>
         </div>
+        {attempts.length > 0 && (
+          <div className="rm tried-moves">
+            <div className="rm-label">
+              {attempts.length === 1 ? 'wrong try' : `wrong tries (${attempts.length})`}
+            </div>
+            <div className="rm-val">{attempts.join(', ')}</div>
+          </div>
+        )}
         <div className="rm best-move">
           <div className="rm-label">engine best</div>
           <div className="rm-val">{puzzle.bestMove}</div>

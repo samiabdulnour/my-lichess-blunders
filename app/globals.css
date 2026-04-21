@@ -433,6 +433,46 @@ body {
   z-index: 2;
 }
 
+/* Wrapper around each piece — picks up the drag and hosts the bounce
+   animation. Pointer-events are enabled here so the native HTML5 drag
+   system can initiate on the piece; the inner .piece stays inert. */
+.piece-wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  cursor: grab;
+}
+.piece-wrap:active { cursor: grabbing; }
+
+/* Bounce-back: when a wrong move is rewound, the piece starts visually
+   at the wrong destination (translated by --bx/--by squares) and slides
+   back to its home square. --sq-size is the current square size. */
+@keyframes piece-bounce-back {
+  from { transform: translate(calc(var(--bx) * var(--sq-size, 60px)), calc(var(--by) * var(--sq-size, 60px))); }
+  to   { transform: translate(0, 0); }
+}
+.piece-wrap.bouncing {
+  animation: piece-bounce-back 300ms ease-out;
+  cursor: default;
+}
+
+/* Lichess-style tried-moves list: muted warning background, no
+   strikethrough (these weren't the solution, just the user's guesses). */
+.rm.tried-moves {
+  border-color: rgba(192,57,43,0.35);
+  background: rgba(192,57,43,0.04);
+}
+.rm.tried-moves .rm-val {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: normal;
+  text-align: right;
+  word-break: break-word;
+}
+
 /* ── Board + result row ── */
 .board-row {
   display: flex;
@@ -515,11 +555,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.pre-result-hint {
-  color: var(--txt-dim);
-  font-size: 11px;
-  line-height: 1.5;
 }
 .pre-result .abtn:disabled {
   opacity: 0.5;
