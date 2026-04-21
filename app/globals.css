@@ -503,6 +503,28 @@ body {
 .em { color: var(--txt-dim); }
 
 .r-acts { display: flex; flex-direction: column; gap: 6px; }
+
+/* Pre-reveal panel: lives in the same slot as .result but is shown
+   while the puzzle is still unsolved. Hint + "show solution" escape. */
+.pre-result {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 12px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pre-result-hint {
+  color: var(--txt-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.pre-result .abtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .abtn {
   padding: 8px;
   font-size: 10px; font-family: var(--font); font-weight: bold;

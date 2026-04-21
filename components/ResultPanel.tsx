@@ -41,12 +41,19 @@ export function ResultPanel({ puzzle, yourMove, isOk, onRetry, onNext }: ResultP
     return `${base}${pov}#${ply}`;
   })();
 
+  const gaveUp = yourMove === '—';
+  const statusText = isOk
+    ? 'engine move found'
+    : gaveUp
+      ? 'solution revealed'
+      : 'suboptimal — stockfish prefers different';
+
   return (
     <div className="result">
       <div className="r-line" style={{ marginBottom: 10 }}>
         <span className={isOk ? 'r-status-ok' : 'r-status-fail'}></span>
         <span style={{ color: isOk ? 'var(--green)' : 'var(--red)' }}>
-          {isOk ? 'engine move found' : 'suboptimal — stockfish prefers different'}
+          {statusText}
         </span>
       </div>
       <div className="r-section">eval delta</div>

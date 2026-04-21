@@ -47,9 +47,16 @@ export default function Page() {
   const [revealed, setRevealed] = useState(false);
   const [yourMove, setYourMove] = useState<string | null>(null);
   const [isOk, setIsOk] = useState(false);
+  /** True while a wrong move is flashing red and being undone. Blocks
+   *  further input during that short window. */
+  const [awaitingRetry, setAwaitingRetry] = useState(false);
   const [solved, setSolved] = useState<Record<string, SolveStatus>>({});
   const [stats, setStats] = useState<SessionStats>({ correct: 0, wrong: 0, streak: 0 });
   const hydrated = useRef(false);
+  /** Puzzle id whose outcome has already been counted in stats. Prevents
+   *  double-counting when the user tries multiple wrong moves before
+   *  either finding the right one or clicking "show solution". */
+  const recordedRef = useRef<string | null>(null);
   /**
    * Mirror of `current` as a ref. handleImport uses this to decide whether
    * to auto-jump on the first streamed batch without falling into stale-
@@ -138,13 +145,14 @@ export default function Page() {
     setBestFrom(bestFromSq);
     setRevealed(false);
     setYourMove(null);
+    setAwaitingRetry(false);
     setLegalFrom(groupLegal(c));
   }, []);
 
   /* ── Handle a click on a board square ── */
   const onSquareClick = useCallback(
     (sqn: string) => {
-      if (revealed || !current) return;
+      if (revealed || awaitingRetry || !current) return;
       const myColor = current.abdulsColor === 'white' ? 'w' : 'b';
       if (chess.turn() !== myColor) return;
 
@@ -167,10 +175,16 @@ export default function Page() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [revealed, current, chess, selected, legalFrom]
+    [revealed, awaitingRetry, current, chess, selected, legalFrom]
   );
 
-  /* ── Apply a move and compare to the puzzle's best move ── */
+  /* ── Apply a move and compare to the puzzle's best move ──
+     Lichess-style flow:
+      · Correct move → reveal result panel, persistent green flash.
+      · Wrong move  → brief red flash on the landing square, then undo
+        the move so the user can try again. Stats are recorded once per
+        puzzle (on the first wrong attempt), so repeat tries don't
+        inflate the miss count. */
   const makeMove = (mv: Move) => {
     if (!current) return;
     const next = new Chess(chess.fen());
@@ -183,58 +197,109 @@ export default function Page() {
     if (!applied) return;
 
     const ok = applied.san === current.bestMove;
+
+    if (ok) {
+      setChess(next);
+      setSelected(null);
+      setLastFrom(mv.from);
+      setLastTo(mv.to);
+      setRevealed(true);
+      setYourMove(applied.san);
+      setIsOk(true);
+      setFlashOk(mv.to);
+
+      if (recordedRef.current !== current.id) {
+        recordedRef.current = current.id;
+        setSolved((prev) =>
+          prev[current.id] ? prev : { ...prev, [current.id]: 'ok' }
+        );
+        setStats((prev) =>
+          solved[current.id]
+            ? prev
+            : { correct: prev.correct + 1, wrong: prev.wrong, streak: prev.streak + 1 }
+        );
+      }
+      return;
+    }
+
+    // ── Wrong move ──
+    // Briefly show the piece on its landing square with a red flash,
+    // then rewind so the user can try a different move.
     setChess(next);
     setSelected(null);
     setLastFrom(mv.from);
     setLastTo(mv.to);
-    setRevealed(true);
-    setYourMove(applied.san);
-    setIsOk(ok);
+    setFlashFail(mv.to);
+    setAwaitingRetry(true);
 
-    // Paint the user's destination square green (correct) or red (wrong).
-    // On a correct move the green flash is persistent. On a wrong move the
-    // red flash shows briefly, then we rewind and replay the engine's best
-    // move so the right piece physically travels to the right square —
-    // that reads much more clearly than two static green squares on an
-    // unchanged board.
-    if (ok) {
-      setFlashOk(mv.to);
-    } else {
-      setFlashFail(mv.to);
-
-      const beforeFen = chess.fen();
-      const bestSan = current.bestMove;
-      const puzzleId = current.id;
-      setTimeout(() => {
-        // Bail if the user advanced to another puzzle while we were waiting.
-        if (currentRef.current?.id !== puzzleId) return;
-        const replay = new Chess(beforeFen);
-        let bestApplied;
-        try {
-          bestApplied = replay.move(bestSan);
-        } catch {
-          return;
-        }
-        if (!bestApplied) return;
-        setChess(replay);
-        setLastFrom(bestApplied.from);
-        setLastTo(bestApplied.to);
-        setFlashFail(null);
-        setFlashOk(bestApplied.to);
-      }, 900);
+    // Record the miss exactly once per puzzle.
+    if (recordedRef.current !== current.id) {
+      recordedRef.current = current.id;
+      setSolved((prev) =>
+        prev[current.id] ? prev : { ...prev, [current.id]: 'fail' }
+      );
+      setStats((prev) =>
+        solved[current.id]
+          ? prev
+          : { correct: prev.correct, wrong: prev.wrong + 1, streak: 0 }
+      );
     }
 
-    setSolved((prev) => {
-      if (prev[current.id]) return prev;
-      return { ...prev, [current.id]: ok ? 'ok' : 'fail' };
-    });
-    setStats((prev) => {
-      if (solved[current.id]) return prev;
-      return ok
-        ? { correct: prev.correct + 1, wrong: prev.wrong, streak: prev.streak + 1 }
-        : { correct: prev.correct, wrong: prev.wrong + 1, streak: 0 };
-    });
+    const beforeFen = chess.fen();
+    const puzzleId = current.id;
+    setTimeout(() => {
+      // Bail if the user advanced to another puzzle while we were waiting.
+      if (currentRef.current?.id !== puzzleId) return;
+      const rewind = new Chess(beforeFen);
+      setChess(rewind);
+      setLastFrom(null);
+      setLastTo(null);
+      setFlashFail(null);
+      setAwaitingRetry(false);
+      setLegalFrom(groupLegal(rewind));
+    }, 700);
   };
+
+  /* ── Give up: reveal the engine's best move ──
+     Same replay flow we used to run on a wrong answer: rewind to the
+     "before" position and play the engine's move so the right piece
+     travels to the right square. The result panel then appears with
+     "you played = —" to flag that the solution was shown rather than
+     found. */
+  const showSolution = useCallback(() => {
+    if (!current || revealed || awaitingRetry) return;
+    const beforeFen = chess.fen();
+    const replay = new Chess(beforeFen);
+    let bestApplied;
+    try {
+      bestApplied = replay.move(current.bestMove);
+    } catch {
+      return;
+    }
+    if (!bestApplied) return;
+
+    setChess(replay);
+    setSelected(null);
+    setLastFrom(bestApplied.from);
+    setLastTo(bestApplied.to);
+    setFlashOk(bestApplied.to);
+    setFlashFail(null);
+    setRevealed(true);
+    setYourMove('—');
+    setIsOk(false);
+
+    if (recordedRef.current !== current.id) {
+      recordedRef.current = current.id;
+      setSolved((prev) =>
+        prev[current.id] ? prev : { ...prev, [current.id]: 'fail' }
+      );
+      setStats((prev) =>
+        solved[current.id]
+          ? prev
+          : { correct: prev.correct, wrong: prev.wrong + 1, streak: 0 }
+      );
+    }
+  }, [current, revealed, awaitingRetry, chess, solved]);
 
   const retry = () => {
     if (current) loadPuzzle(current);
@@ -403,9 +468,11 @@ export default function Page() {
               />
 
               {/* Always reserve the 280px panel slot so the board doesn't shift
-                  horizontally when the result appears. */}
-              <div className="result-slot" aria-hidden={!revealed}>
-                {revealed && yourMove && (
+                  horizontally when the result appears. Before reveal the
+                  slot hosts a "show solution" escape hatch; after reveal
+                  it shows the result panel with eval details + next. */}
+              <div className="result-slot">
+                {revealed && yourMove ? (
                   <ResultPanel
                     puzzle={current}
                     yourMove={yourMove}
@@ -413,6 +480,20 @@ export default function Page() {
                     onRetry={retry}
                     onNext={next}
                   />
+                ) : (
+                  <div className="pre-result">
+                    <div className="pre-result-hint">
+                      make a move on the board. wrong moves bounce back —
+                      keep trying until you find the engine's choice.
+                    </div>
+                    <button
+                      className="abtn"
+                      onClick={showSolution}
+                      disabled={awaitingRetry}
+                    >
+                      show solution
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
