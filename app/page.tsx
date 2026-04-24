@@ -11,6 +11,8 @@ import { ecoName } from '@/lib/eco-names';
 import type {
   EcoFilter,
   Filter,
+  GamePhase,
+  PhaseFilter,
   Puzzle,
   SessionStats,
   SolveStatus,
@@ -27,9 +29,12 @@ import {
 
 export default function Page() {
   const [all, setAll] = useState<Puzzle[]>([]);
-  const [filter, setFilter] = useState<Filter>('all');
+  // Start on 'unseen' so the user always lands on something fresh rather
+  // than re-seeing puzzles they've already solved.
+  const [filter, setFilter] = useState<Filter>('unseen');
   const [ecoFilter, setEcoFilter] = useState<EcoFilter>('all');
   const [speedFilter, setSpeedFilter] = useState<SpeedFilter>('all');
+  const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
   const [current, setCurrent] = useState<Puzzle | null>(null);
   const [chess, setChess] = useState<Chess>(() => new Chess());
   const [selected, setSelected] = useState<string | null>(null);
@@ -99,11 +104,11 @@ export default function Page() {
   }, [solved]);
 
   /* ── Derived: filtered puzzle list ──
-     Apply the type filter first, then narrow further by exact ECO code. */
+     Apply the progress filter first, then narrow by ECO / speed / phase. */
   const filtered = useMemo(() => {
     let list = all;
-    if (filter === 'blunder') list = list.filter((p) => p.type === 'blunder');
-    else if (filter === 'unseen') list = list.filter((p) => !solved[p.id]);
+    if (filter === 'unseen') list = list.filter((p) => !solved[p.id]);
+    else if (filter === 'retry') list = list.filter((p) => solved[p.id] === 'fail');
 
     if (ecoFilter !== 'all') {
       list = list.filter((p) => p.eco === ecoFilter);
@@ -111,8 +116,20 @@ export default function Page() {
     if (speedFilter !== 'all') {
       list = list.filter((p) => p.speed === speedFilter);
     }
+    if (phaseFilter !== 'all') {
+      list = list.filter((p) => phaseOf(p) === phaseFilter);
+    }
     return list;
-  }, [all, filter, ecoFilter, speedFilter, solved]);
+  }, [all, filter, ecoFilter, speedFilter, phaseFilter, solved]);
+
+  /* Count of unseen puzzles across the whole library, NOT narrowed by the
+     ECO / speed / phase dropdowns. The auto-fetch loop uses this: if the
+     user is still picky about phase but has unseen puzzles elsewhere, we
+     shouldn't spam Lichess for more. */
+  const unseenCount = useMemo(
+    () => all.reduce((n, p) => (solved[p.id] ? n : n + 1), 0),
+    [all, solved]
+  );
 
   /* ── Load a puzzle: replay its setup moves and hand over to the board ──
      We also capture the opponent's last move (the final setup move) so
@@ -425,11 +442,14 @@ export default function Page() {
         filter={filter}
         ecoFilter={ecoFilter}
         speedFilter={speedFilter}
+        phaseFilter={phaseFilter}
         current={current}
         solved={solved}
+        unseenCount={unseenCount}
         onFilterChange={setFilter}
         onEcoFilterChange={setEcoFilter}
         onSpeedFilterChange={setSpeedFilter}
+        onPhaseFilterChange={setPhaseFilter}
         onSelect={loadPuzzle}
         onImport={handleImport}
         onClearAll={handleClearAll}
@@ -557,4 +577,20 @@ function groupLegal(c: Chess): Record<string, Move[]> {
     out[m.from].push(m);
   }
   return out;
+}
+
+/**
+ * Classify a puzzle by how many plies had been played before the critical
+ * position. Thresholds are the conventional-commentary breakpoints:
+ *   · opening    — moves 1–12     (plies 0–23)
+ *   · middlegame — moves 13–30    (plies 24–59)
+ *   · endgame    — move 31+       (plies 60+)
+ * These are heuristics, not hard definitions (a true endgame classifier
+ * would look at material too), but they're accurate enough for a filter.
+ */
+function phaseOf(p: Puzzle): GamePhase {
+  const ply = p.setupMoves.length;
+  if (ply < 24) return 'opening';
+  if (ply < 60) return 'middlegame';
+  return 'endgame';
 }

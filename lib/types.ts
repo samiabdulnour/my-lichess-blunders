@@ -48,7 +48,28 @@ export interface Puzzle {
 
 export type SolveStatus = 'ok' | 'fail';
 
-export type Filter = 'all' | 'blunder' | 'unseen';
+/**
+ * Progress filter for the puzzle list:
+ *   · unseen — never attempted
+ *   · retry  — first-try failed (includes "show solution" give-ups)
+ *   · all    — everything in the store
+ * `unseen` is the default on app start so the user always lands on
+ * something fresh. Blunder/mistake severity was dropped as a filter
+ * because the whole library is already blunders-only in practice
+ * (mistakes are rare + less instructive).
+ */
+export type Filter = 'unseen' | 'retry' | 'all';
+
+/**
+ * Which game phase the puzzle occurred in. Classified by how many plies
+ * had been played before the critical position — see `phaseOf` on the
+ * page. The exact thresholds are heuristic but close to how commentators
+ * carve up a game (opening ≈ first dozen moves, endgame ≈ move 30+).
+ */
+export type GamePhase = 'opening' | 'middlegame' | 'endgame';
+
+/** Phase filter for the sidebar. `'all'` matches every puzzle. */
+export type PhaseFilter = 'all' | GamePhase;
 
 /**
  * ECO opening filter. `'all'` matches every puzzle. A single letter

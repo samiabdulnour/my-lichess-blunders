@@ -8,7 +8,9 @@ import type { Puzzle } from './types';
  *   bt.username         — the Lichess username used for imports (convenience)
  *   bt.solved           — { [puzzleId]: 'ok' | 'fail' } progress
  *   bt.oldestFetchedMs  — UNIX ms of the oldest game imported from Lichess,
- *                         used as a cursor for the "fetch older 30 games" button.
+ *                         used as a cursor for pagination.
+ *   bt.fetchedGames     — cumulative count of games pulled from Lichess
+ *                         across all batches. Caps auto-fetch at 200.
  *
  * Graduate this to a real database (SQLite via better-sqlite3, or Postgres)
  * when you start caring about multi-device or multi-user.
@@ -18,6 +20,7 @@ const KEY_PUZZLES = 'bt.puzzles';
 const KEY_USERNAME = 'bt.username';
 const KEY_SOLVED = 'bt.solved';
 const KEY_OLDEST = 'bt.oldestFetchedMs';
+const KEY_FETCHED = 'bt.fetchedGames';
 
 export function loadPuzzles(): Puzzle[] {
   if (typeof window === 'undefined') return [];
@@ -88,6 +91,7 @@ export function clearAll(): void {
   window.localStorage.removeItem(KEY_PUZZLES);
   window.localStorage.removeItem(KEY_SOLVED);
   window.localStorage.removeItem(KEY_OLDEST);
+  window.localStorage.removeItem(KEY_FETCHED);
 }
 
 /**
@@ -107,4 +111,22 @@ export function saveOldestFetchedMs(ms: number | null): void {
   if (typeof window === 'undefined') return;
   if (ms == null) window.localStorage.removeItem(KEY_OLDEST);
   else window.localStorage.setItem(KEY_OLDEST, String(ms));
+}
+
+/**
+ * Cumulative number of Lichess games that have been fetched (summed
+ * across all batches). Used to enforce the `MAX_FETCHED_GAMES` cap so
+ * the auto-fetch loop eventually stops.
+ */
+export function loadFetchedGameCount(): number {
+  if (typeof window === 'undefined') return 0;
+  const raw = window.localStorage.getItem(KEY_FETCHED);
+  if (!raw) return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+export function saveFetchedGameCount(n: number): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(KEY_FETCHED, String(Math.max(0, Math.floor(n))));
 }

@@ -200,6 +200,13 @@ body {
 .import-status.ok   { color: var(--green); }
 .import-status.err  { color: var(--red); }
 
+.import-counter {
+  font-size: 10px;
+  color: var(--txt-dim);
+  margin-top: -4px;
+  letter-spacing: 0.3px;
+}
+
 .import-progress {
   position: relative;
   height: 10px;

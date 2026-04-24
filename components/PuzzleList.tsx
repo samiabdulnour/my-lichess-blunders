@@ -1,7 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { Puzzle, SolveStatus, Filter, EcoFilter, SpeedFilter } from '@/lib/types';
+import type {
+  Puzzle,
+  SolveStatus,
+  Filter,
+  EcoFilter,
+  SpeedFilter,
+  PhaseFilter,
+} from '@/lib/types';
 import { ecoName } from '@/lib/eco-names';
 import { ImportControls } from './ImportControls';
 
@@ -11,11 +18,15 @@ interface PuzzleListProps {
   filter: Filter;
   ecoFilter: EcoFilter;
   speedFilter: SpeedFilter;
+  phaseFilter: PhaseFilter;
   current: Puzzle | null;
   solved: Record<string, SolveStatus>;
+  /** Unseen puzzle count, used by auto-fetch to decide when to pull more. */
+  unseenCount: number;
   onFilterChange: (f: Filter) => void;
   onEcoFilterChange: (e: EcoFilter) => void;
   onSpeedFilterChange: (s: SpeedFilter) => void;
+  onPhaseFilterChange: (p: PhaseFilter) => void;
   onSelect: (p: Puzzle) => void;
   onImport: (newPuzzles: Puzzle[]) => void;
   onClearAll: () => void;
@@ -30,17 +41,28 @@ const SPEEDS: { value: SpeedFilter; label: string }[] = [
   { value: 'classical', label: 'classical' },
 ];
 
+/** Game-phase filter options. */
+const PHASES: { value: PhaseFilter; label: string }[] = [
+  { value: 'all', label: 'all phases' },
+  { value: 'opening', label: 'opening' },
+  { value: 'middlegame', label: 'middlegame' },
+  { value: 'endgame', label: 'endgame' },
+];
+
 export function PuzzleList({
   all,
   filtered,
   filter,
   ecoFilter,
   speedFilter,
+  phaseFilter,
   current,
   solved,
+  unseenCount,
   onFilterChange,
   onEcoFilterChange,
   onSpeedFilterChange,
+  onPhaseFilterChange,
   onSelect,
   onImport,
   onClearAll,
@@ -57,18 +79,22 @@ export function PuzzleList({
 
   return (
     <div className="side">
-      <ImportControls onImport={onImport} onClearAll={onClearAll} />
+      <ImportControls
+        onImport={onImport}
+        onClearAll={onClearAll}
+        unseenCount={unseenCount}
+      />
       <div className="side-header">
         <div className="side-prompt">filter puzzles</div>
       </div>
       <div className="fbrow">
-        {(['all', 'blunder', 'unseen'] as const).map((f) => (
+        {(['unseen', 'retry', 'all'] as const).map((f) => (
           <button
             key={f}
             className={'fb' + (filter === f ? ' on' : '')}
             onClick={() => onFilterChange(f)}
           >
-            {f === 'blunder' ? 'blunders' : f}
+            {f}
           </button>
         ))}
       </div>
@@ -85,6 +111,23 @@ export function PuzzleList({
           {SPEEDS.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="eco-filter">
+        <label className="eco-filter-label" htmlFor="phase-select">
+          game phase
+        </label>
+        <select
+          id="phase-select"
+          className="eco-select"
+          value={phaseFilter}
+          onChange={(e) => onPhaseFilterChange(e.target.value as PhaseFilter)}
+        >
+          {PHASES.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
             </option>
           ))}
         </select>
