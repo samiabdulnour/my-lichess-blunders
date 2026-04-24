@@ -30,3 +30,10 @@ next-env.d.ts.bak
 data/
 *.sqlite
 *.db
+
+# capacitor / ios build artifacts
+.api-parked/
+ios/App/App/public/
+ios/DerivedData/
+ios/Pods/
+ios/App/Pods/

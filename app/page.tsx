@@ -7,6 +7,7 @@ import { Board } from '@/components/Board';
 import { PuzzleList } from '@/components/PuzzleList';
 import { TerminalShell } from '@/components/TerminalShell';
 import { ResultPanel } from '@/components/ResultPanel';
+import { apiUrl } from '@/lib/api';
 import { ecoName } from '@/lib/eco-names';
 import type {
   EcoFilter,
@@ -81,7 +82,7 @@ export default function Page() {
     const savedSolved = loadSolved();
     setSolved(savedSolved);
 
-    fetch('/api/puzzles')
+    fetch(apiUrl('/api/puzzles'))
       .then((r) => r.json())
       .then((data: { puzzles: Puzzle[] }) => {
         const merged = mergePuzzles(data.puzzles ?? [], saved);
@@ -409,7 +410,7 @@ export default function Page() {
     setYourMove(null);
 
     // Reload the seed puzzles so the sidebar isn't empty after a clear.
-    fetch('/api/puzzles')
+    fetch(apiUrl('/api/puzzles'))
       .then((r) => r.json())
       .then((data: { puzzles: Puzzle[] }) => {
         const seeds = data.puzzles ?? [];

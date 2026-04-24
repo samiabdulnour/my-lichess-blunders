@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Puzzle } from '@/lib/types';
+import { apiUrl } from '@/lib/api';
 import {
   loadUsername,
   saveUsername,
@@ -122,7 +123,7 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
       let totalPuzzles = 0;
       let parsedGames = 0;
       try {
-        const res = await fetch('/api/lichess/import', {
+        const res = await fetch(apiUrl('/api/lichess/import'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -278,7 +279,7 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
 
     setStatus({ kind: 'working', message: 'analyzing with stockfish...' });
     try {
-      const res = await fetch('/api/import-pgn', {
+      const res = await fetch(apiUrl('/api/import-pgn'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pgn, username: name }),
