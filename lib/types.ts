@@ -50,15 +50,15 @@ export type SolveStatus = 'ok' | 'fail';
 
 /**
  * Progress filter for the puzzle list:
- *   · unseen — never attempted
- *   · retry  — first-try failed (includes "show solution" give-ups)
- *   · all    — everything in the store
- * `unseen` is the default on app start so the user always lands on
+ *   · new   — never attempted
+ *   · retry — first-try failed (includes "show solution" give-ups)
+ *   · all   — everything in the store
+ * `new` is the default on app start so the user always lands on
  * something fresh. Blunder/mistake severity was dropped as a filter
  * because the whole library is already blunders-only in practice
  * (mistakes are rare + less instructive).
  */
-export type Filter = 'unseen' | 'retry' | 'all';
+export type Filter = 'new' | 'retry' | 'all';
 
 /**
  * Which game phase the puzzle occurred in. Classified by how many plies

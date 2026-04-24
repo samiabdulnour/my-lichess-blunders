@@ -88,7 +88,7 @@ export function PuzzleList({
         <div className="side-prompt">filter puzzles</div>
       </div>
       <div className="fbrow">
-        {(['unseen', 'retry', 'all'] as const).map((f) => (
+        {(['new', 'retry', 'all'] as const).map((f) => (
           <button
             key={f}
             className={'fb' + (filter === f ? ' on' : '')}

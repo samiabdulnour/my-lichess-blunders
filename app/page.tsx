@@ -29,9 +29,9 @@ import {
 
 export default function Page() {
   const [all, setAll] = useState<Puzzle[]>([]);
-  // Start on 'unseen' so the user always lands on something fresh rather
+  // Start on 'new' so the user always lands on something fresh rather
   // than re-seeing puzzles they've already solved.
-  const [filter, setFilter] = useState<Filter>('unseen');
+  const [filter, setFilter] = useState<Filter>('new');
   const [ecoFilter, setEcoFilter] = useState<EcoFilter>('all');
   const [speedFilter, setSpeedFilter] = useState<SpeedFilter>('all');
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all');
@@ -107,7 +107,7 @@ export default function Page() {
      Apply the progress filter first, then narrow by ECO / speed / phase. */
   const filtered = useMemo(() => {
     let list = all;
-    if (filter === 'unseen') list = list.filter((p) => !solved[p.id]);
+    if (filter === 'new') list = list.filter((p) => !solved[p.id]);
     else if (filter === 'retry') list = list.filter((p) => solved[p.id] === 'fail');
 
     if (ecoFilter !== 'all') {
