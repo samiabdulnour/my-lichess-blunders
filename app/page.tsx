@@ -463,7 +463,7 @@ export default function Page() {
             </div>
           </div>
         ) : (
-          <>
+          <div className="board-col">
             <div className="ctx">
               <div>
                 <div className="ctx-opp">
@@ -562,7 +562,7 @@ export default function Page() {
                 )}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </TerminalShell>

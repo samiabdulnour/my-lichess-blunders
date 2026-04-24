@@ -316,11 +316,6 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
     runImport(oldestMs);
   }, [hydrated, oldestMs, unseenCount, username, exhausted, runImport]);
 
-  const pct =
-    status.progress && status.progress.total > 0
-      ? Math.min(100, Math.round((status.progress.current / status.progress.total) * 100))
-      : null;
-
   const working = status.kind === 'working';
 
   return (
@@ -388,19 +383,16 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
       >
         clear all puzzles
       </button>
-      {pct !== null && working && (
-        <div className="import-progress" aria-label="analysis progress">
-          <div className="import-progress-bar" style={{ width: pct + '%' }} />
-          <div className="import-progress-text">
-            {status.progress?.current ?? 0} / {status.progress?.total ?? 0}
-          </div>
-        </div>
-      )}
-      {status.message && (
+      {/* Only surface the status line at rest — on success or on error.
+          Streaming per-game progress during an import would otherwise
+          flicker in the sidebar while the user is trying to concentrate
+          on a puzzle. Working state is communicated solely by the button
+          label ("· importing ·"). */}
+      {status.message && !working && (
         <div
           className={
             'import-status ' +
-            (status.kind === 'error' ? 'err' : status.kind === 'ok' ? 'ok' : 'work')
+            (status.kind === 'error' ? 'err' : 'ok')
           }
         >
           {status.message}

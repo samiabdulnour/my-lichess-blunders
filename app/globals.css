@@ -333,9 +333,24 @@ body {
 .main::-webkit-scrollbar-track { background: var(--bg2); }
 .main::-webkit-scrollbar-thumb { background: var(--border2); }
 
+/* ── Board column ──
+   Wraps .ctx, .puzzle-prompt, and .board-row so all three share the same
+   width. Without this the ctx bar would stop at max-width: 778px while
+   the board-row extended further right (board + gap + result-slot ≈ 808px),
+   making the ctx right edge visibly misaligned with the pre-result /
+   ResultPanel right edge. 808px ≈ bwrap (~510) + row gap (18) + slot (280). */
+.board-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 808px;
+  align-items: stretch;
+}
+
 /* ── Context bar ── */
 .ctx {
-  width: 100%; max-width: 778px;
+  width: 100%;
   border: 1px solid var(--border);
   background: var(--bg2);
   padding: 10px 14px;
@@ -352,7 +367,7 @@ body {
 
 /* ── Prompt line ── */
 .puzzle-prompt {
-  width: 100%; max-width: 778px;
+  width: 100%;
   font-size: 12px; color: var(--txt-dim);
 }
 .puzzle-prompt::before { content: '> '; color: var(--green); font-weight: bold; }
@@ -663,12 +678,6 @@ body {
   }
   .ctx-opp span.eco { display: none; }
   .ctx-meta { font-size: 9px; margin-top: 2px; }
-  .tbadge {
-    font-size: 9px;
-    padding: 3px 7px;
-    letter-spacing: 0.5px;
-    flex-shrink: 0;
-  }
 
   /* The terminal-style "find the best move" prompt is pure decoration —
      drop it on mobile to give the board more breathing room. */
