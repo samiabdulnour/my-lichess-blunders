@@ -24,8 +24,13 @@ import {
   savePuzzles,
   loadSolved,
   saveSolved,
+  loadRandomOrder,
+  saveRandomOrder,
+  loadTheme,
+  saveTheme,
   mergePuzzles,
   clearAll,
+  type ThemeMode,
 } from '@/lib/storage';
 
 export default function Page() {
@@ -64,6 +69,12 @@ export default function Page() {
   const [attempts, setAttempts] = useState<string[]>([]);
   const [solved, setSolved] = useState<Record<string, SolveStatus>>({});
   const [stats, setStats] = useState<SessionStats>({ correct: 0, wrong: 0, streak: 0 });
+  /** When true, `next()` picks a random unsolved puzzle from the filtered
+   *  list instead of the next in order. Persisted to localStorage. */
+  const [randomOrder, setRandomOrder] = useState(false);
+  /** Color theme. Drives a `data-theme` attribute on <html>; CSS in
+   *  globals.css does the actual swap. Persisted to localStorage. */
+  const [theme, setTheme] = useState<ThemeMode>('light');
   const hydrated = useRef(false);
   /** Puzzle id whose outcome has already been counted in stats. Prevents
    *  double-counting when the user tries multiple wrong moves before
@@ -81,6 +92,8 @@ export default function Page() {
     const saved = loadPuzzles();
     const savedSolved = loadSolved();
     setSolved(savedSolved);
+    setRandomOrder(loadRandomOrder());
+    setTheme(loadTheme());
 
     fetch(apiUrl('/api/puzzles'))
       .then((r) => r.json())
@@ -103,6 +116,21 @@ export default function Page() {
   useEffect(() => {
     if (hydrated.current) saveSolved(solved);
   }, [solved]);
+
+  /* ── Persist preference toggles + apply theme to <html> ── */
+  useEffect(() => {
+    if (hydrated.current) saveRandomOrder(randomOrder);
+  }, [randomOrder]);
+
+  useEffect(() => {
+    // The CSS theme switch is driven by a data-theme attribute on the
+    // root <html> rather than a class, so the variable swap stays
+    // outside React's tree and works for child portals too.
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    if (hydrated.current) saveTheme(theme);
+  }, [theme]);
 
   /* ── Derived: filtered puzzle list ──
      Apply the progress filter first, then narrow by ECO / speed / phase. */
@@ -241,6 +269,17 @@ export default function Page() {
       setIsOk(true);
       setFlashOk(mv.to);
 
+      // Forward animation: slide the piece visibly from its origin to
+      // the destination so the user sees the move land. Reuses the
+      // intro-move mechanism — the piece already lives on `to` after
+      // setChess(next); the Board translates it from `from` back to 0.
+      setIntroMove({ from: mv.from, to: mv.to });
+      const okPuzzleId = current.id;
+      setTimeout(() => {
+        if (currentRef.current?.id !== okPuzzleId) return;
+        setIntroMove(null);
+      }, 350);
+
       if (recordedRef.current !== current.id) {
         recordedRef.current = current.id;
         setSolved((prev) =>
@@ -338,6 +377,15 @@ export default function Page() {
     setYourMove('—');
     setIsOk(false);
 
+    // Animate the engine's move sliding into place so "show solution"
+    // doesn't just teleport the piece. Same mechanism as a correct move.
+    setIntroMove({ from: bestApplied.from, to: bestApplied.to });
+    const showPuzzleId = current.id;
+    setTimeout(() => {
+      if (currentRef.current?.id !== showPuzzleId) return;
+      setIntroMove(null);
+    }, 350);
+
     if (recordedRef.current !== current.id) {
       recordedRef.current = current.id;
       setSolved((prev) =>
@@ -357,6 +405,23 @@ export default function Page() {
 
   const next = useCallback(() => {
     if (!current || filtered.length === 0) return;
+
+    // Random mode: pick any unsolved puzzle from the filtered list,
+    // excluding the current one. If everything's solved, pick any
+    // other puzzle so retry-loops don't get stuck on a single puzzle.
+    if (randomOrder) {
+      const pool = filtered.filter(
+        (p) => p.id !== current.id && !solved[p.id]
+      );
+      const fallback = filtered.filter((p) => p.id !== current.id);
+      const choices = pool.length > 0 ? pool : fallback;
+      if (choices.length === 0) return;
+      const pick = choices[Math.floor(Math.random() * choices.length)];
+      loadPuzzle(pick);
+      return;
+    }
+
+    // Sequential mode (default): walk forward to the next unsolved.
     const idx = filtered.findIndex((p) => p.id === current.id);
     for (let i = 1; i <= filtered.length; i++) {
       const cand = filtered[(idx + i) % filtered.length];
@@ -366,7 +431,7 @@ export default function Page() {
       }
     }
     loadPuzzle(filtered[(idx + 1) % filtered.length]);
-  }, [current, filtered, solved, loadPuzzle]);
+  }, [current, filtered, solved, loadPuzzle, randomOrder]);
 
   /**
    * Import handler. Safe to call many times during a streamed import:
@@ -447,6 +512,8 @@ export default function Page() {
         current={current}
         solved={solved}
         unseenCount={unseenCount}
+        randomOrder={randomOrder}
+        theme={theme}
         onFilterChange={setFilter}
         onEcoFilterChange={setEcoFilter}
         onSpeedFilterChange={setSpeedFilter}
@@ -454,6 +521,8 @@ export default function Page() {
         onSelect={loadPuzzle}
         onImport={handleImport}
         onClearAll={handleClearAll}
+        onRandomOrderChange={setRandomOrder}
+        onThemeChange={setTheme}
       />
 
       <div className="main">

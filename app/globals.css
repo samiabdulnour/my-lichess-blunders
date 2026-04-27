@@ -25,7 +25,43 @@
   /* Board squares — kept warm wood-tone */
   --sq-l:      #e8d6a8;
   --sq-d:      #b08858;
+  /* Last-move highlights — pulled out so dark mode can override
+     without us having to repeat every selector that uses them. */
+  --lm-l:      #d8c558;
+  --lm-d:      #9a8030;
+  /* Board grid drop shadow — softer in light mode, harder in dark. */
+  --board-shadow: 0 2px 8px rgba(0,0,0,0.08);
   --font: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+/* ── Dark theme ──
+   Toggled by setting `data-theme="dark"` on <html> from the React layer.
+   Keeps the palette brighter/more saturated so the green/yellow/red
+   accents still read on a black background. Board squares get a cool
+   slate look so light squares don't blow out against pure black. */
+html[data-theme='dark'] {
+  --bg:        #000000;
+  --bg2:       #0c0c0c;
+  --bg3:       #161616;
+  --border:    #2a2a2a;
+  --border2:   #3a3a3a;
+  --txt:       #f1f1f1;
+  --txt-dim:   #9a9a9a;
+  --txt-faint: #666666;
+  --green:     #4cd896;
+  --green-dim: #2da66a;
+  --yellow:    #e6b94a;
+  --red:       #ee5a4c;
+  --blue:      #5b8def;
+  --cyan:      #46c4d1;
+  --prompt:    #4cd896;
+  --cursor:    #5b8def;
+  --sq-l:      #b6c2cc;
+  --sq-d:      #4a6072;
+  --lm-l:      #c9b94b;
+  --lm-d:      #8a6f1f;
+  --board-shadow: 0 2px 14px rgba(0,0,0,0.65);
+  color-scheme: dark;
 }
 
 html, body { height: 100%; }
@@ -397,7 +433,7 @@ body {
   grid-template-columns: repeat(8, var(--sq-size));
   grid-template-rows: repeat(8, var(--sq-size));
   border: 1px solid var(--border2);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: var(--board-shadow);
   user-select: none;
   gap: 0;
   font-size: 0;
@@ -422,8 +458,8 @@ body {
 .sq-d { background: var(--sq-d); }
 
 .sq.sel { box-shadow: inset 0 0 0 3px var(--green); z-index: 2; }
-.sq-l.lm { background: #d8c558 !important; }
-.sq-d.lm { background: #9a8030 !important; }
+.sq-l.lm { background: var(--lm-l) !important; }
+.sq-d.lm { background: var(--lm-d) !important; }
 
 .sq-dot-hint {
   position: absolute;
@@ -449,8 +485,10 @@ body {
 }
 
 /* Wrapper around each piece — picks up the drag and hosts the bounce
-   animation. Pointer-events are enabled here so the native HTML5 drag
-   system can initiate on the piece; the inner .piece stays inert. */
+   animation. `touch-action: none` is critical: it tells mobile Safari
+   that touches starting on a piece are for the chess-drag pipeline,
+   not for scrolling/zooming the page. Without it, dragging a piece
+   on iOS would scroll the board out from under your finger. */
 .piece-wrap {
   position: absolute;
   inset: 0;
@@ -459,6 +497,10 @@ body {
   justify-content: center;
   z-index: 2;
   cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 .piece-wrap:active { cursor: grabbing; }
 
@@ -476,9 +518,24 @@ body {
   pointer-events: none;
 }
 
-/* While being dragged, fade the original so the user sees which piece
-   is moving without it competing with the browser's drag image. */
-.piece-wrap.dragging-source { opacity: 0.35; }
+/* While being dragged the wrap escapes its square via inline transform
+   (set from JS) and floats above the board. Cursor stays as grabbing,
+   the piece scales up slightly so it reads as "lifted", and the
+   z-index bump puts it above all neighbouring squares. */
+.piece-wrap.dragging {
+  z-index: 50;
+  cursor: grabbing;
+  transition: none;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+}
+
+/* Drop-target ring: the square the dragged piece would land on if
+   released right now. Slightly thicker than the regular .sel ring so
+   it stands out against the busy backdrop of legal-target dots. */
+.sq.drop-target {
+  box-shadow: inset 0 0 0 4px var(--green);
+  z-index: 2;
+}
 
 /* Lichess-style tried-moves list: muted warning background, no
    strikethrough (these weren't the solution, just the user's guesses). */
@@ -727,6 +784,71 @@ body {
   .titlebar-text { font-size: 11px; }
   .titlebar-author { font-size: 10px; right: 10px; }
 }
+
+/* ── Sidebar preference toggles ──
+   Two pill switches stacked side-by-side under the filter dropdowns.
+   Each is a button with `role="switch"` so keyboard + screen readers
+   pick up the state; the visual is a left-aligned knob that slides
+   right when on, with the matching label sitting next to it. */
+.prefs {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pref-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: var(--txt-dim);
+  font-family: var(--font);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: color 0.1s;
+}
+.pref-toggle:hover { color: var(--txt); }
+.pref-toggle::before {
+  content: '';
+  width: 28px;
+  height: 14px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  border-radius: 8px;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pref-knob {
+  position: absolute;
+  /* Knob lives inside the ::before pill; we use absolute relative to the
+     button itself by giving the button position: relative. */
+  left: 2px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--txt-dim);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  transition: left 0.15s, background 0.15s;
+  pointer-events: none;
+}
+.pref-toggle { position: relative; }
+.pref-toggle.on::before {
+  background: rgba(45,166,106,0.3);
+  border-color: var(--green);
+}
+.pref-toggle.on .pref-knob {
+  left: 16px;
+  background: var(--green);
+}
+.pref-label { line-height: 1; }
 
 /* Very small phones — drop the square size a little more so the board
    always fits with room to breathe. */

@@ -9,6 +9,7 @@ import type {
   SpeedFilter,
   PhaseFilter,
 } from '@/lib/types';
+import type { ThemeMode } from '@/lib/storage';
 import { ecoName } from '@/lib/eco-names';
 import { ImportControls } from './ImportControls';
 
@@ -23,6 +24,10 @@ interface PuzzleListProps {
   solved: Record<string, SolveStatus>;
   /** Unseen puzzle count, used by auto-fetch to decide when to pull more. */
   unseenCount: number;
+  /** Random-order toggle: when on, "next" picks a random unsolved puzzle. */
+  randomOrder: boolean;
+  /** Active color theme; used to render the right state for the toggle. */
+  theme: ThemeMode;
   onFilterChange: (f: Filter) => void;
   onEcoFilterChange: (e: EcoFilter) => void;
   onSpeedFilterChange: (s: SpeedFilter) => void;
@@ -30,6 +35,8 @@ interface PuzzleListProps {
   onSelect: (p: Puzzle) => void;
   onImport: (newPuzzles: Puzzle[]) => void;
   onClearAll: () => void;
+  onRandomOrderChange: (on: boolean) => void;
+  onThemeChange: (t: ThemeMode) => void;
 }
 
 /** Time-format options in the order Lichess presents them. */
@@ -59,6 +66,8 @@ export function PuzzleList({
   current,
   solved,
   unseenCount,
+  randomOrder,
+  theme,
   onFilterChange,
   onEcoFilterChange,
   onSpeedFilterChange,
@@ -66,6 +75,8 @@ export function PuzzleList({
   onSelect,
   onImport,
   onClearAll,
+  onRandomOrderChange,
+  onThemeChange,
 }: PuzzleListProps) {
   /* Build the ECO option list from the puzzles we actually have. Every
      distinct ECO code, sorted, with its full opening name attached. */
@@ -152,6 +163,33 @@ export function PuzzleList({
             );
           })}
         </select>
+      </div>
+      {/* Preference toggles. Two side-by-side switches for random order
+          (affects "next puzzle" picking) and dark theme (drives the
+          [data-theme] attribute on <html> from page.tsx). */}
+      <div className="prefs">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={randomOrder}
+          className={'pref-toggle' + (randomOrder ? ' on' : '')}
+          onClick={() => onRandomOrderChange(!randomOrder)}
+          title="Pick the next puzzle at random instead of in order"
+        >
+          <span className="pref-knob" />
+          <span className="pref-label">random order</span>
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={theme === 'dark'}
+          className={'pref-toggle' + (theme === 'dark' ? ' on' : '')}
+          onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
+          title="Switch between light and dark theme"
+        >
+          <span className="pref-knob" />
+          <span className="pref-label">dark mode</span>
+        </button>
       </div>
       <div className="qline">
         → <span>{filtered.length}</span> puzzles matched
