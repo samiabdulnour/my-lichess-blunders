@@ -21,6 +21,8 @@ const KEY_USERNAME = 'bt.username';
 const KEY_SOLVED = 'bt.solved';
 const KEY_OLDEST = 'bt.oldestFetchedMs';
 const KEY_FETCHED = 'bt.fetchedGames';
+const KEY_RANDOM = 'bt.randomOrder';
+const KEY_THEME = 'bt.theme';
 
 export function loadPuzzles(): Puzzle[] {
   if (typeof window === 'undefined') return [];
@@ -129,4 +131,37 @@ export function loadFetchedGameCount(): number {
 export function saveFetchedGameCount(n: number): void {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(KEY_FETCHED, String(Math.max(0, Math.floor(n))));
+}
+
+/* ── User-preference toggles ──
+   Tiny boolean / enum settings kept in localStorage so they survive
+   reloads. Each has a default that matches "first-time user" behavior. */
+
+/** Random-order toggle. When true, `next()` picks a random unsolved
+ *  puzzle from the filtered list instead of the next one in order. */
+export function loadRandomOrder(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(KEY_RANDOM) === '1';
+}
+
+export function saveRandomOrder(on: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (on) window.localStorage.setItem(KEY_RANDOM, '1');
+  else window.localStorage.removeItem(KEY_RANDOM);
+}
+
+export type ThemeMode = 'light' | 'dark';
+
+/** Color theme. Defaults to 'light' (the original terminal-on-paper
+ *  look). When 'dark', the app inverts to a full-black background suite
+ *  driven by a `[data-theme="dark"]` selector in globals.css. */
+export function loadTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  const v = window.localStorage.getItem(KEY_THEME);
+  return v === 'dark' ? 'dark' : 'light';
+}
+
+export function saveTheme(t: ThemeMode): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(KEY_THEME, t);
 }
