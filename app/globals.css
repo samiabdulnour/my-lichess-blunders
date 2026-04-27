@@ -520,12 +520,18 @@ body {
 /* While being dragged the wrap escapes its square via inline transform
    (set from JS) and floats above the board. Cursor stays as grabbing,
    the piece scales up slightly so it reads as "lifted", and the
-   z-index bump puts it above all neighbouring squares. */
+   z-index bump puts it above all neighbouring squares.
+   `pointer-events: none` is critical: without it, `elementFromPoint`
+   at drop time hits the floating wrap itself and `.closest('[data-sq]')`
+   walks up to the SOURCE square's parent — the drop is then rejected
+   as "released on the source". setPointerCapture keeps move/up events
+   firing on the wrap regardless of pointer-events. */
 .piece-wrap.dragging {
   z-index: 50;
   cursor: grabbing;
   transition: none;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+  pointer-events: none;
 }
 
 /* Drop-target ring: the square the dragged piece would land on if
