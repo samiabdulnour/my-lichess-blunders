@@ -56,10 +56,9 @@ html[data-theme='dark'] {
   --cyan:      #46c4d1;
   --prompt:    #4cd896;
   --cursor:    #5b8def;
-  --sq-l:      #b6c2cc;
-  --sq-d:      #4a6072;
-  --lm-l:      #c9b94b;
-  --lm-d:      #8a6f1f;
+  /* Board squares + last-move highlights are intentionally NOT
+     overridden here — the warm wood-tone palette stays identical
+     across themes so the board reads the same regardless of UI mode. */
   --board-shadow: 0 2px 14px rgba(0,0,0,0.65);
   color-scheme: dark;
 }
