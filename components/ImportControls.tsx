@@ -10,6 +10,8 @@ import {
   saveOldestFetchedMs,
   loadFetchedGameCount,
   saveFetchedGameCount,
+  loadAutoImport,
+  saveAutoImport,
 } from '@/lib/storage';
 
 interface ImportControlsProps {
@@ -90,6 +92,9 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
    */
   const [exhausted, setExhausted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  /** True once the welcome-page handoff has been processed, so the
+   *  effect below doesn't re-fire if the user re-mounts the panel. */
+  const autoImportConsumed = useRef(false);
 
   useEffect(() => {
     setUsername(loadUsername());
@@ -301,6 +306,23 @@ export function ImportControls({ onImport, onClearAll, unseenCount }: ImportCont
       workingRef.current = false;
     }
   };
+
+  /* ── First-import handoff from the welcome screen ──
+     The welcome page saves the username and flips an `autoImport` flag
+     in localStorage when the user clicks "start importing". We pick it
+     up here on mount — once username is hydrated — and kick off the
+     first batch so the user lands on a loading screen instead of an
+     empty sidebar. */
+  useEffect(() => {
+    if (!hydrated) return;
+    if (autoImportConsumed.current) return;
+    if (workingRef.current) return;
+    if (!username.trim()) return;
+    if (!loadAutoImport()) return;
+    autoImportConsumed.current = true;
+    saveAutoImport(false);
+    runImport();
+  }, [hydrated, username, runImport]);
 
   /* ── Auto-import loop ──
      When the user has worked their way through most of what's loaded

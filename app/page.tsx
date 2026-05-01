@@ -7,6 +7,7 @@ import { Board } from '@/components/Board';
 import { PuzzleList } from '@/components/PuzzleList';
 import { TerminalShell } from '@/components/TerminalShell';
 import { ResultPanel } from '@/components/ResultPanel';
+import { WelcomePage } from '@/components/WelcomePage';
 import { apiUrl } from '@/lib/api';
 import { ecoName } from '@/lib/eco-names';
 import type {
@@ -28,6 +29,7 @@ import {
   saveRandomOrder,
   loadTheme,
   saveTheme,
+  loadWelcomeSeen,
   mergePuzzles,
   clearAll,
   type ThemeMode,
@@ -75,6 +77,11 @@ export default function Page() {
   /** Color theme. Drives a `data-theme` attribute on <html>; CSS in
    *  globals.css does the actual swap. Persisted to localStorage. */
   const [theme, setTheme] = useState<ThemeMode>('light');
+  /** Welcome / onboarding gate. `null` while we're still checking
+   *  localStorage on mount so the SSR'd shell stays put — once we know
+   *  whether it's a first-time visit we flip to true (show welcome) or
+   *  false (drop into the normal app). */
+  const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
   const hydrated = useRef(false);
   /** Puzzle id whose outcome has already been counted in stats. Prevents
    *  double-counting when the user tries multiple wrong moves before
@@ -94,6 +101,7 @@ export default function Page() {
     setSolved(savedSolved);
     setRandomOrder(loadRandomOrder());
     setTheme(loadTheme());
+    setShowWelcome(!loadWelcomeSeen());
 
     fetch(apiUrl('/api/puzzles'))
       .then((r) => r.json())
@@ -499,6 +507,15 @@ export default function Page() {
 
   /* ── Render ── */
   const mn = current ? Math.floor(current.setupMoves.length / 2) + 1 : 0;
+
+  if (showWelcome) {
+    return (
+      <WelcomePage
+        onImport={handleImport}
+        onDismiss={() => setShowWelcome(false)}
+      />
+    );
+  }
 
   return (
     <TerminalShell loadedCount={all.length} stats={stats}>
