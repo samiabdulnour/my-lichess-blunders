@@ -23,6 +23,8 @@ const KEY_OLDEST = 'bt.oldestFetchedMs';
 const KEY_FETCHED = 'bt.fetchedGames';
 const KEY_RANDOM = 'bt.randomOrder';
 const KEY_THEME = 'bt.theme';
+const KEY_WELCOME = 'bt.welcomeSeen';
+const KEY_AUTO_IMPORT = 'bt.autoImport';
 
 export function loadPuzzles(): Puzzle[] {
   if (typeof window === 'undefined') return [];
@@ -164,4 +166,34 @@ export function loadTheme(): ThemeMode {
 export function saveTheme(t: ThemeMode): void {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(KEY_THEME, t);
+}
+
+/** Welcome / onboarding flag. The landing page is shown on first visit
+ *  and dismissed once the user picks an action. We default to `true` on
+ *  the server so SSR doesn't render the welcome screen and then yank it
+ *  out from under the user once we hydrate. */
+export function loadWelcomeSeen(): boolean {
+  if (typeof window === 'undefined') return true;
+  return window.localStorage.getItem(KEY_WELCOME) === '1';
+}
+
+export function saveWelcomeSeen(seen: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (seen) window.localStorage.setItem(KEY_WELCOME, '1');
+  else window.localStorage.removeItem(KEY_WELCOME);
+}
+
+/** Set by the welcome screen when the user clicks "start importing".
+ *  Read once by ImportControls on mount, which then clears it and runs
+ *  the first import automatically so the user lands directly on a
+ *  loading-puzzles screen rather than an empty sidebar. */
+export function loadAutoImport(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(KEY_AUTO_IMPORT) === '1';
+}
+
+export function saveAutoImport(on: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (on) window.localStorage.setItem(KEY_AUTO_IMPORT, '1');
+  else window.localStorage.removeItem(KEY_AUTO_IMPORT);
 }
